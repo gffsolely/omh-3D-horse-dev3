@@ -1,0 +1,149 @@
+{
+    "msg": "success",
+    "traceId": "90856efac1_20230714114930371_aut",
+    "code": 200,
+    "data": {
+        "gameRaceInfo": {
+            "id": "1111111000120",
+            "fieldModelId": "field_001",
+            "raceName": "01:08 xy",
+            "typeName": "NOVICE",
+            "weather": "SUNNY",
+            "weatherProbability": " ",
+            "moneyNum": 300,
+            "horsScore": "U",
+            "maximumEntry": 12,
+            "organizer": "UA",
+            "startTime": "2023-07-12 17:09:46",
+            "startTwelveHoursTime": null,
+            "endTime": "2023-07-12 17:13:09",
+            "gussingTime": "2023-07-12 17:10:46",
+            "gussingEndTime": "2023-07-12 17:11:16",
+            "areaName": "Gymnasium",
+            "direction": "LEFT",
+            "area": "SAND",
+            "areaCondition": "SOFT",
+            "areaLength": 1400,
+            "areaNums": 10,
+            "raceStatus": "REPLAY",
+            "raceCostList": [
+                {
+                    "id": "1679176269107781637",
+                    "type": "GOLDCOIN",
+                    "amount": "1"
+                }
+            ],
+            "utcDate": "2023-07-14 03:49:30",
+            "duration": 113107,
+            "video": null,
+            "imgUrl": "https://dkq0sb0nnrxd8.cloudfront.net/images-omh/202306/26/023100002.jpg",
+            "raceStart": false,
+            "maxHorseRace": 12,
+            "minHorseRace": 1,
+            "flvUrl": "https://nginx.omh-s2-aut.wephonecloud.com:4433/live?app=live&stream=1679166816820727811",
+            "socektUrl": "wss://race.hk.omnihorse.io:7101/live",
+            "raceAiJson": null,
+            "winningCondition": null,
+            "gussing": false,
+            "pound": true
+        },
+        "gameRaceAwardExts": [
+            {
+                "image2dUrl": "https://dkq0sb0nnrxd8.cloudfront.net/omh-game/2DAssets/HorseImage/S1/Dhorse/4724.jpg",
+                "horseName": "Penelope Bennett #776",
+                "rating": "SSSR",
+                "grade": 1,
+                "manName": "Cooper Rose Quartz",
+                "rarity": "R",
+                "duration": "95.6738",
+                "headUrl": null,
+                "manGrade": "Novice",
+                "rankGrade": "U",
+                "ranking": "1",
+                "horseCode": "1",
+                "raceScore": "68",
+                "awarList": [
+                    {
+                        "rewardTypeGrouping": "EQUIP",
+                        "equip2dUrl": "https://dkq0sb0nnrxd8.cloudfront.net/omh-game/2DAssets/EquipmentImage/S1/Horse/Stirrup/5.jpg",
+                        "assetsType": "Basic Stirrup",
+                        "assetsNumber": "1",
+                        "starLevel": 4,
+                        "spd": 18,
+                        "sta": 4,
+                        "stg": 5,
+                        "agi": 4,
+                        "rating": "SSR"
+                    }
+                ],
+                "isUser": true,
+                "userId": "1671434201133326337",
+                "horseManImage2dUrl": "https://dkq0sb0nnrxd8.cloudfront.net/omh-game/2DAssets/JockeyImage/S1/437.jpg"
+            },
+            {
+                "image2dUrl": "https://dkq0sb0nnrxd8.cloudfront.net/omh-game/2DAssets/HorseImage/S1/Hybrid/horse_483A35%26332926_N_2D.png",
+                "horseName": "Evans  Savannah",
+                "rating": "N",
+                "grade": 6,
+                "manName": "Cornelia Marcus",
+                "rarity": "SR",
+                "duration": "100.538",
+                "headUrl": null,
+                "manGrade": "Novice",
+                "rankGrade": "U",
+                "ranking": "2",
+                "horseCode": "2",
+                "raceScore": "63",
+                "awarList": [
+                    {
+                        "rewardTypeGrouping": "EQUIP",
+                        "equip2dUrl": "https://dkq0sb0nnrxd8.cloudfront.net/omh-game/2DAssets/EquipmentImage/S1/Horse/Saddle/18.jpg",
+                        "assetsType": "Basic Saddle",
+                        "assetsNumber": "1",
+                        "starLevel": 3,
+                        "spd": 9,
+                        "sta": 6,
+                        "stg": 7,
+                        "agi": 6,
+                        "rating": "SR"
+                    }
+                ],
+                "isUser": false,
+                "userId": "4",
+                "horseManImage2dUrl": "https://dkq0sb0nnrxd8.cloudfront.net/omh-game/2DAssets/JockeyImage/S1/21.jpg"
+            },
+            {
+                "image2dUrl": "https://dkq0sb0nnrxd8.cloudfront.net/omh-game/2DAssets/HorseImage/S1/Dhorse/16966.jpg",
+                "horseName": "Martin  Savannahe",
+                "rating": "SSSR",
+                "grade": 6,
+                "manName": "Gemma Henry",
+                "rarity": "R",
+                "duration": "100.763",
+                "headUrl": null,
+                "manGrade": "Novice",
+                "rankGrade": "U",
+                "ranking": "3",
+                "horseCode": "3",
+                "raceScore": "61",
+                "awarList": [
+                    {
+                        "rewardTypeGrouping": "PROPS",
+                        "equip2dUrl": "https://omh-oss.oss-cn-shanghai.aliyuncs.com/images-omh/202306/16/010203510.png",
+                        "assetsType": "Lv2 Nutrients",
+                        "assetsNumber": "1",
+                       "starLevel": 3,
+                        "spd": 9,
+                        "sta": 7,
+                        "stg": 5,
+                        "agi": 8,
+                        "rating": "SR"
+                    }
+                ],
+                "isUser": false,
+                "userId": "3",
+                "horseManImage2dUrl": "https://dkq0sb0nnrxd8.cloudfront.net/omh-game/2DAssets/JockeyImage/S1/244.jpg"
+            }
+        ]
+    }
+}
