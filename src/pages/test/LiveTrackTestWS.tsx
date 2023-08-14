@@ -233,6 +233,7 @@ export default function LiveTrackTest() {
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
+      connectHeaders: {},
       onConnect: handleOnConnect,
       onDisconnect: () => {
         console.log('handleOnDisconnect Disconnected');
