@@ -13,8 +13,8 @@ export default function indexPage() {
           horse Page
           <div>
             see:
-            <Link href='/horse/horse-arena-standard-1' className=' text-blue-500 '>
-              horse-arena-standard(赛场模型1 AI)
+            <Link href='/horse/horse-arena-standard' className=' text-blue-500 '>
+              horse-arena-standard(老赛场模型 AI)
             </Link>
           </div>
         </div>
@@ -22,8 +22,8 @@ export default function indexPage() {
           horse Page
           <div>
             see:
-            <Link href='/horse/horse-arena-santa-2' className=' text-blue-500 '>
-              horse-arena-santa(赛场模型2 AI 全景贴图)
+            <Link href='/horse/horse-arena-santa' className=' text-blue-500 '>
+              horse-arena-santa(新赛场模型 AI 全景贴图)
             </Link>
           </div>
         </div>
@@ -31,8 +31,8 @@ export default function indexPage() {
           horse Page
           <div>
             see:
-            <Link href='/horse/horse-arena-santa-2-ws' className=' text-blue-500 '>
-              horse-arena-santa-ws(赛场模型2 AI WS 实时比赛)
+            <Link href='/horse/horse-arena-santa-ws' className=' text-blue-500 '>
+              horse-arena-santa-ws(赛场模型 AI WS 实时比赛)
             </Link>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function indexPage() {
           <div>
             see:
             <Link href='/test/LiveTrackTest' className=' text-blue-500 '>
-              LiveTrack(2D 比赛曲线)
+              LiveTrack(2D 比赛曲线&语音解说)
             </Link>
           </div>
         </div>

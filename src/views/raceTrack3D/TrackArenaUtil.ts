@@ -10,6 +10,11 @@ export enum HorseEquipType {
   Stirrup = 3,
   SaddlePad = 4,
 }
+export enum AnimationType {
+  Stand = 'stand',
+  Run = 'run',
+  Sprint = 'sprint',
+}
 
 export const getTextureByNumber = (hNumber) => {
   const texture = new THREE.CanvasTexture(document.createElement('canvas'));
@@ -149,9 +154,20 @@ export default class TrackArenaUtil {
           trackNumber: chorse.trackNumber,
           speedData: [],
         });
+        let isSkip = true;
         for (let index2 = 0; index2 < chorse.speedData.length; index2++) {
           if (index2 >= 1) {
-            const pathPre = chorse.speedData[index2 - 1];
+            const pPre = chorse.speedData[index2 - 1];
+            //跳过起点时原地踏步问题,过滤前1秒数据
+            if (pPre.t < 1) continue;
+
+            let pathPre = chorse.speedData[index2 - 1];
+            if (isSkip) {
+              pathPre = chorse.speedData[0];
+              isSkip = false;
+            }
+
+            //const pathPre = chorse.speedData[index2 - 1];
             const cxaPre = -pathPre.xa;
             const cyaPre = pathPre.ya;
             const path = chorse.speedData[index2];
