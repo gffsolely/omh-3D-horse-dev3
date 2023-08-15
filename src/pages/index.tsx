@@ -36,7 +36,6 @@ export default function indexPage() {
             </Link>
           </div>
         </div>
-
         <div className=' ml-auto  mr-auto w-1/2 pt-4 text-center text-white'>
           horse Page
           <div>
@@ -55,7 +54,15 @@ export default function indexPage() {
             </Link>
           </div>
         </div>
-
+        <div className=' ml-auto  mr-auto w-1/2 pt-4 text-center text-white'>
+          horse Page
+          <div>
+            see:
+            <Link href='/test/device-info' className=' text-blue-500 '>
+              device-info(设备信息)
+            </Link>
+          </div>
+        </div>
         <div className='h-[1000px]'></div>
       </main>
     </Layout>

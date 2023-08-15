@@ -10,6 +10,7 @@ import { isPc } from '@/utils';
 
 import TrackArenaUtil, {
   AnimationType,
+  getFps,
   getTextureByNumber,
   HorseEquipType,
   loadingHide,
@@ -31,23 +32,19 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
   const ReqAFrameId = useRef(0);
   const CurrentLookAtHModel = useRef<THREE.Object3D>(); //当前视角的目标模型
   const ModelObjBoxGroup = useRef<THREE.Group>();
-  const HorseOffsetCamVector3 = useRef({ x: 0, y: 2, z: 10 }); // (0, 2, 10); //(21, 4, -3); //基础相机位置与目标位置的偏移量
-  // const HorseRunMixers = useRef<THREE.AnimationMixer[]>([]).current;
-  // const HorseRunModelObjs = useRef([]).current;
-  // const HorseRunActions = useRef<THREE.AnimationAction[]>([]).current;
-  // const HorseManRunMixers = useRef<THREE.AnimationMixer[]>([]).current;
-  // const HorseManRunModelObjs = useRef([]).current;
-  // const HorseManRunActions = useRef<THREE.AnimationAction[]>([]).current;
+  //const HorseOffsetCamVector3 = useRef({ x: 0, y: 3, z: 15 }); // (0, 2, 10); //(21, 4, -3); //基础相机位置与目标位置的偏移量
+  const HorseOffsetCamVector3 = useRef({ x: 17.9, y: 6.64, z: 30 });
+
   const HorseManRunModelObjs = useRef([]).current;
   const HorseManRunMixerMap = useRef<Map<string, THREE.AnimationMixer[]>>(new Map()).current; //key为：动画1 动画2 动画3
-  const HorseManRunActionMap = useRef<Map<string, THREE.AnimationAction[]>>(new Map()).current;
+  const HorseManRunActionMap = useRef<Map<string, THREE.AnimationAction[]>>(new Map()).current; //key为：动画1 动画2 动画3
   const HorseManBaseAnimationMap = useRef<Map<string, THREE.AnimationClip[]>>(new Map()).current;
   const HorseManCurrentAnimationType = useRef(AnimationType.Stand);
+  const HorseManAnimationFps = useRef(60);
 
   const HNumberModelMap = useRef<Map<string, THREE.Object3D>>(new Map()).current;
   const HNumberBoardModelMap = useRef<Map<string, THREE.Object3D>>(new Map()).current;
   const HModelTrackNumbers = useRef([]).current;
-  const HManNumberModelMap = useRef<Map<string, THREE.Object3D>>(new Map()).current;
 
   const segCount = useRef(20); //每秒40帧 //把每0.5秒的点继续分割 20 // 0.1秒分割4
   const aiRaceResult = useRef([]);
@@ -58,7 +55,6 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
   const racePathPlay = useRef(false);
   const pathPlaySpeed = useRef(1); //曲线播放速度 //1 1倍速，2 2倍速,...
   const hNumberBoardGeo = useRef<THREE.CircleGeometry>(null);
-  const hModelIsRun = useRef(false);
   const lookAtTrackNumber = useRef(-1);
   const SpotLightModel = useRef<THREE.SpotLight>(null);
   const pathTerminusCamVector3 = useRef({
@@ -69,24 +65,16 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
 
   const TrackArenaUtilInstance = useRef<TrackArenaUtil>(null);
 
-  const [selectedActionIdx, setSelectedActionIdx] = useState(1);
   const BodyViewSize = useRef<{ w: number; h: number }>({
     w: 2560,
     h: 1550,
   }).current;
   const [bodyViewWH, setBodyViewWH] = useState({ w: 2560, h: 1550 });
   const [selectSpeed, setSelectSpeed] = useState('1');
+  const [currentRealFps, setCurrentRealFps] = useState(0);
 
   //#region fileHost3d
-  //const royalEsplanadeHdr = config.fileHost3d + '/omh-game/models/hdr/royal_esplanade_1k.hdr';
   const scene360Hdr = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien_4K.hdr';
-  //const royalEsplanadeHdr = '/models/texture/hdr/blouberg_sunrise_2_1k.hdr';
-  //const horseRunBlackModel = config.fileHost3d + '/omh-game/models/model/202307/18/horse_digital_base_run.glb';
-  // const horseManSprintModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_man_sprint_v0.1.glb';
-  // const horseManRunModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_man_run_v0.1.glb';
-  // const horseManStandModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_man_stand_v0.1.glb';
-  // const horseBaseRunModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_base_run_v0.1.glb';
-  // const horseManBaseRunModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_man_base_run_v0.1.glb';
   const horseManBaseModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_base_model_v0.2.glb';
   const horseManAnimSprintModel =
@@ -95,7 +83,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_run_v0.3.glb';
   const horseManAnimStandModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_stand_v0.3.glb';
-  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.5.glb';
+  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.6.glb';
 
   const floorTextureRoughness = config.fileHost3d + '/omh-game/models/textures/202306/05/terrain-roughness.jpg';
   const floorTextureNormal = config.fileHost3d + '/omh-game/models/textures/202306/05/terrain-normal.jpg';
@@ -154,6 +142,20 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
   }));
 
   //#region loaderGlgModel
+
+  // const loaderGlgModelQiPao = useCallback(() => {
+  //   const glbFile = '/models/3d/qipao.glb';
+  //   const loader = new GLTFLoader(loadManager.current);
+
+  //   loader.load(glbFile, (obj) => {
+  //     console.log('glbFile qipao obj :', obj);
+  //     const model = obj.scene;
+  //     model.position.set(-142, 19.2, 39.1);
+  //     model.rotation.y = -Math.PI;
+  //     model.castShadow = true;
+  //     Scene.current.add(model);
+  //   });
+  // }, []);
 
   const loaderGlgModel = useCallback((hNumber = '1', r = 0, hPosVec3: THREE.Vector3) => {
     const loader = new GLTFLoader(loadManager.current);
@@ -257,8 +259,13 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
         //handlePathCamera(model);
         CurrentLookAtHModel.current = model;
         //起点相机位置 赛场模型 field_008
-        Camera.current.position.set(-424.78, 5.89, 140);
-        const cVector3 = new THREE.Vector3(-437.915, 1, 120);
+        //Camera.current.position.set(-424.78, 5.89, 140);
+        //Vector3 {x: -420.03504875570786, y: 7.642706935385061, z: 151.1506522962127}
+        Camera.current.position.set(-420, 7.64, 151.1);
+        //const cVector3 = new THREE.Vector3(-437.915, 1, 120);
+        const cmodel = HNumberModelMap.get('number' + HModelTrackNumbers[0]);
+        const cVector3 = cmodel.position;
+        console.log('the one cVector3', cVector3);
         Camera.current.lookAt(cVector3);
         Controls.current.target.copy(cVector3);
         Controls.current.update();
@@ -290,14 +297,16 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     HorseManBaseAnimationMap.set(AnimationType.Run, obj.animations);
     obj = await loader.loadAsync(horseManAnimSprintModel);
     HorseManBaseAnimationMap.set(AnimationType.Sprint, obj.animations);
+    //HorseManAnimationFps.current = await getFps(loadManager.current);
   }, []);
 
   const loaderGlgRaceArena = useCallback(() => {
     const loader = new GLTFLoader(loadManager.current);
+    //horseRaceArenaModel
     loader.load(horseRaceArenaModel, (obj) => {
       //console.log('horseRaceArenaModel  obj:', obj);
       const model = obj.scene;
-      model.position.set(62, 19.4, 39.5);
+      model.position.set(62, 19.4, 38.8);
       model.rotation.y = -Math.PI;
       model.name = 'horseRaceArenaModel';
       model.castShadow = true;
@@ -310,6 +319,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
           if (child.name === 'qipao_G') {
             //console.log('child.position', child.position);
             child.position.set(204, 0, -0.4); //起点位置 赛场模型 field_008
+            //child.visible = false;
           }
         }
         if (child.isMesh) {
@@ -326,18 +336,18 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
         }
       });
 
-      const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(1300, 1300),
-        new THREE.MeshStandardMaterial({
-          color: new THREE.Color(0, 0, 0),
-          roughnessMap: TrackArenaUtilInstance.current.getDigitalHTexture(floorTextureRoughness),
-          normalMap: TrackArenaUtilInstance.current.getDigitalHTexture(floorTextureNormal),
-        })
-      );
-      plane.position.y = -21;
-      plane.rotation.x = -Math.PI / 2;
-      plane.receiveShadow = true;
-      model.add(plane);
+      // const plane = new THREE.Mesh(
+      //   new THREE.PlaneGeometry(1300, 1300),
+      //   new THREE.MeshStandardMaterial({
+      //     color: new THREE.Color(0, 0, 0),
+      //     roughnessMap: TrackArenaUtilInstance.current.getDigitalHTexture(floorTextureRoughness),
+      //     normalMap: TrackArenaUtilInstance.current.getDigitalHTexture(floorTextureNormal),
+      //   })
+      // );
+      // plane.position.y = -21;
+      // plane.rotation.x = -Math.PI / 2;
+      // plane.receiveShadow = true;
+      // model.add(plane);
 
       Scene.current.add(model);
     });
@@ -453,26 +463,81 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
   const handleHorseMansRunAction = () => {
     HorseManBaseAnimationMap.forEach((cAnimations, ckey) => {
       if (cAnimations && cAnimations.length >= 1) {
-        const horseManRunMixers = [];
+        // // let actDuration = 4;
+        // // if (HorseManAnimationFps.current <= 50) {
+        // //   if (ckey === AnimationType.Sprint) actDuration = 2.5;
+        // //   else if (ckey === AnimationType.Run) actDuration = 1.8;
+        // //   else if (ckey === AnimationType.Stand) actDuration = 10;
+        // // } else if (HorseManAnimationFps.current <= 100) {
+        // //   if (ckey === AnimationType.Sprint) actDuration = 3;
+        // //   else if (ckey === AnimationType.Run) actDuration = 2.3;
+        // //   else if (ckey === AnimationType.Stand) actDuration = 12;
+        // // } else if (HorseManAnimationFps.current <= 150) {
+        // //   if (ckey === AnimationType.Sprint) actDuration = 3;
+        // //   else if (ckey === AnimationType.Run) actDuration = 2.7;
+        // //   else if (ckey === AnimationType.Stand) actDuration = 15;
+        // // } else {
+        // //   if (ckey === AnimationType.Sprint) actDuration = 3;
+        // //   else if (ckey === AnimationType.Run) actDuration = 3;
+        // //   else if (ckey === AnimationType.Stand) actDuration = 18;
+        // // }
+        // // console.log('handleHorseMansRunAction actDuration:', { ckey, actDuration });
+        // let actTimeScale = 1;
+        // if (HorseManAnimationFps.current <= 50) {
+        //   actTimeScale = 0.8;
+        // } else if (HorseManAnimationFps.current <= 100) {
+        //   actTimeScale = 0.6;
+        // } else if (HorseManAnimationFps.current <= 150) {
+        //   actTimeScale = 0.5;
+        // } else {
+        //   actTimeScale = 0.4;
+        //   // if (ckey === AnimationType.Sprint) actTimeScale = 3;
+        //   // else if (ckey === AnimationType.Run) actTimeScale = 3;
+        //   // else if (ckey === AnimationType.Stand) actTimeScale = 18;
+        // }
+        //console.log('handleHorseMansRunAction actTimeScale:', { ckey, actTimeScale });
+        const horseManRunMixers = [],
+          horseManRunActions = [];
         HorseManRunModelObjs.forEach((obj) => {
           const cModel = obj.scene;
           const mixerLeftHorse = new THREE.AnimationMixer(cModel);
           const actionHorseRun = mixerLeftHorse.clipAction(cAnimations[0]);
           actionHorseRun.loop = THREE.LoopRepeat;
-          let actDuration = 4;
-          if (ckey === 'sprint') actDuration = 2;
-          else if (ckey === 'stand') actDuration = 16;
-          actionHorseRun.setDuration(actDuration);
+          //actionHorseRun.setDuration(actDuration);
+          actionHorseRun.timeScale = 0.4;
           actionHorseRun.time = Math.random() * 2;
           actionHorseRun.play();
-          //horseManRunActions.push(actionHorseRun);
+          horseManRunActions.push(actionHorseRun);
           horseManRunMixers.push(mixerLeftHorse);
         });
         HorseManRunMixerMap.set(ckey, horseManRunMixers);
-        //HorseManRunActionMap.set(ckey, horseManRunActions);
+        HorseManRunActionMap.set(ckey, horseManRunActions);
       }
     });
   };
+
+  const lastActTimeScaleRef = useRef(0.4);
+  useEffect(() => {
+    let actTimeScale = 1;
+    if (currentRealFps <= 50) {
+      actTimeScale = 1;
+    } else if (currentRealFps <= 100) {
+      actTimeScale = 0.8;
+    } else if (currentRealFps <= 150) {
+      actTimeScale = 0.6;
+    } else {
+      actTimeScale = 0.4;
+    }
+    if (actTimeScale != lastActTimeScaleRef.current) {
+      lastActTimeScaleRef.current = actTimeScale;
+      console.log('useEffect currentRealFps actTimeScale:', { actTimeScale });
+      HorseManRunActionMap.forEach((val) => {
+        val.forEach((actionHorseRun) => {
+          actionHorseRun.timeScale = actTimeScale; // 0.4;
+        });
+      });
+    }
+  }, [currentRealFps, HorseManRunActionMap]);
 
   // 动画切换相机
   const animateCameraTransition = (startCamera, endCamera) => {
@@ -518,9 +583,27 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
   //#endregion
 
   //#region init renderScene
+  // const fps = useRef(0);
+  // const lastCalledTime = useRef(performance.now());
+  const fps2 = useRef(0);
+  const lastCalledTime2 = useRef(performance.now());
 
   // 渲染画面
   const renderScene = useCallback(() => {
+    // console.log('renderScene renderScene ', Date.now());
+    // const delta = (performance.now() - lastCalledTime.current) / 1000;
+    // fps.current = Math.round(1 / delta);
+    // setCurrentRealFps(fps.current);
+    // lastCalledTime.current = performance.now();
+    //console.log(fps.current + ' fps');
+    fps2.current++;
+    if (performance.now() - lastCalledTime2.current >= 1000) {
+      lastCalledTime2.current = performance.now();
+      console.log('Current fps(1s):' + fps2.current);
+      setCurrentRealFps(fps2.current);
+      fps2.current = 0;
+    }
+
     HorseManRunMixerMap.get(HorseManCurrentAnimationType.current)?.forEach((item) => {
       item.update(0.02);
     });
@@ -531,6 +614,14 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
         if (performance.now() - lastTimestampMS.current >= 25) {
           lastTimestampMS.current = performance.now();
           if (pathIndex.current < aiRaceResult.current[0].speedData.length) {
+            if (HorseOffsetCamVector3.current.x > 0) {
+              HorseOffsetCamVector3.current.x -= 0.0298 * pathPlaySpeed.current;
+              HorseOffsetCamVector3.current.y -= 0.0077 * pathPlaySpeed.current;
+              HorseOffsetCamVector3.current.z -= 0.025 * pathPlaySpeed.current;
+              //const HorseOffsetCamVector3 = useRef({ x: 0, y: 3, z: 15 });
+              //const HorseOffsetCamVector3 = useRef({ x: 17.9, y: 6.64, z: 30 });
+            }
+
             for (let index = 0; index < HNumberModelMap.size; index++) {
               const raceRes = aiRaceResult.current[index];
               const numModel = HNumberModelMap.get('number' + raceRes.trackNumber) as THREE.Object3D;
@@ -554,6 +645,11 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
                   if (raceRes.trackNumber === lookAtTrackNumber.current) {
                     handlePathCamera(numModel);
                   }
+                } else if (path.t <= 12) {
+                  //起跑的前12秒 镜头对准最外侧的马
+                  // raceRes.trackNumber === HModelTrackNumbers[HModelTrackNumbers.length - 1] &&
+                  //   handlePathCamera(numModel);
+                  raceRes.trackNumber === HModelTrackNumbers[0] && handlePathCamera(numModel);
                 } else if (path.ranking === 1) {
                   handlePathCamera(numModel);
                 }
@@ -571,7 +667,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     }
     try {
       Render.current.render(Scene.current, ActiveCamera.current);
-      ReqAFrameId.current = window.requestAnimationFrame(() => renderScene());
+      ReqAFrameId.current = window.requestAnimationFrame(renderScene);
     } catch (error) {
       console.error('RenderScene Rendering Error:', error);
       alert('The scene loading is abnormal. Refresh the page and try again!');
@@ -587,21 +683,27 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
       setLoaded((loaded / total) * 100);
     };
 
-    Render.current = new THREE.WebGLRenderer({ antialias: true });
-    Body.current.append(Render.current.domElement);
-    Scene.current = new THREE.Scene();
-    Camera.current = new THREE.PerspectiveCamera();
-    Camera2.current = new THREE.PerspectiveCamera();
-    ModelObjBoxGroup.current = new THREE.Group();
+    try {
+      Render.current = new THREE.WebGLRenderer({ antialias: true });
+      Body.current.append(Render.current.domElement);
+      Scene.current = new THREE.Scene();
+      Camera.current = new THREE.PerspectiveCamera();
+      Camera2.current = new THREE.PerspectiveCamera();
+      ModelObjBoxGroup.current = new THREE.Group();
 
-    hNumberBoardGeo.current = new THREE.CircleGeometry(0.2, 30);
+      hNumberBoardGeo.current = new THREE.CircleGeometry(0.2, 30);
 
-    Render.current.setSize(BodyViewSize.w, BodyViewSize.h);
-    Camera.current.aspect = BodyViewSize.w / BodyViewSize.h;
+      Render.current.setSize(BodyViewSize.w, BodyViewSize.h);
+      Camera.current.aspect = BodyViewSize.w / BodyViewSize.h;
 
-    Render.current.shadowMap.enabled = true;
-    isPc() && Render.current.setPixelRatio(window.devicePixelRatio);
-    Render.current.outputEncoding = THREE.sRGBEncoding;
+      Render.current.shadowMap.enabled = true;
+      isPc() && Render.current.setPixelRatio(window.devicePixelRatio);
+      Render.current.outputEncoding = THREE.sRGBEncoding;
+    } catch (error) {
+      console.error('init Rendering Error:', error);
+      alert('The scene loading is abnormal. Refresh the page and try again!');
+      window.location.reload();
+    }
 
     // // 创建辅助坐标
     // const axesHelper = new THREE.AxesHelper(10);
@@ -674,15 +776,16 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     init();
     createLight();
     createSkydomeHdr();
-    loaderGlgRaceArena();
     await loaderGlgModelAnimations();
+    loaderGlgRaceArena();
+
     loaderCreateRacePath();
     renderScene();
     setView();
     if (Controls.current) {
       Controls.current.enabled = true;
-      // Controls.current.maxAzimuthAngle = Math.PI / 4;
-      // Controls.current.minAzimuthAngle = -Math.PI / 5;
+      // // Controls.current.maxAzimuthAngle = Math.PI / 4;
+      // // Controls.current.minAzimuthAngle = -Math.PI / 5;
       Controls.current.maxPolarAngle = Math.PI / 2;
       Controls.current.minPolarAngle = Math.PI / 4;
       Controls.current.maxDistance = 100;
@@ -705,7 +808,6 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     if (loaded >= 100) {
       setTimeout(() => {
         loadingShow();
-        renderScene();
       }, 500);
     }
   }, [loaded]);
@@ -717,6 +819,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
         <div className='mg-door-button absolute bottom-0 left-0  h-1/2 w-full bg-[rgba(0,0,0,1)]'></div>
         <span className='mg-door-text static z-10 text-[1rem] text-white'>{loaded.toFixed(2)}%</span>
       </div>
+      <div className='absolute left-2 top-12 text-base text-white '>FPS:{currentRealFps}</div>
       <div className=' flex items-center justify-center'>
         <select
           placeholder='倍速'

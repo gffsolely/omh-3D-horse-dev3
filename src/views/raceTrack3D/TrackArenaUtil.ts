@@ -36,6 +36,42 @@ export const getTextureByNumber = (hNumber) => {
   return texture;
 };
 
+export const getFps = (loadManager) => {
+  loadManager.itemStart('');
+
+  let fps = 0;
+  let fps2 = 0;
+  let lastCalledTime = performance.now();
+  let reqAnimId = null;
+  const animate = () => {
+    reqAnimId = window.requestAnimationFrame(animate);
+    // if (lastCalledTime === 0) {
+    //   lastCalledTime = performance.now();
+    //   return;
+    // }
+    // const delta = (performance.now() - lastCalledTime) / 1000;
+    // fps = Math.round(1 / delta);
+    // lastCalledTime = performance.now();
+    // console.log('getFps fps:' + fps);
+
+    fps++;
+    if (performance.now() - lastCalledTime >= 1000) {
+      lastCalledTime = performance.now();
+      //console.log(fps + ' fps2-------------');
+      fps2 = fps;
+      fps = 0;
+    }
+  };
+  animate();
+  return new Promise<number>((resolve) => {
+    setTimeout(function () {
+      loadManager.itemEnd('');
+      reqAnimId && window.cancelAnimationFrame(reqAnimId);
+      resolve(fps2);
+    }, 1100);
+  });
+};
+
 /**
  *  使用 loadingHide 与loadingShow时需要在页面中添加如下内容:
       <div className='mg-door-box absolute left-0 top-0 z-20 flex h-full w-full items-center justify-center  '>
