@@ -118,12 +118,15 @@ export const loadingShow = (onComplete = null) => {
 };
 
 export default class TrackArenaUtil {
-  private loadManager = null;
   private textureLoader = null;
-
-  constructor(loadManager) {
-    this.loadManager = loadManager;
+  private raceAudioRef = null;
+  private raceBroadcastMap = new Map<string, any>();
+  private playBroadcastSTOId = null;
+  private isPlayBroadcast = false;
+  constructor(loadManager, raceAudioRef = null, isPlayBroadcast = false) {
+    this.raceAudioRef = raceAudioRef;
     this.textureLoader = new THREE.TextureLoader(loadManager);
+    this.isPlayBroadcast = isPlayBroadcast;
   }
 
   getDigitalHTexture(textureUrl) {
@@ -173,6 +176,7 @@ export default class TrackArenaUtil {
     const resHorsePaths: any[] = [];
     if (aiJson && aiJson.raceResult && aiJson.raceResult.length > 0) {
       //console.log('createRacePath,aiJson:', aiJson.broadcastData);
+      this.handleBroadcastData(aiJson.broadcastData);
       if (aiJson.interval) {
         //判断坐标点间隔时长，//0.5~0.1
         segCount.current = aiJson.interval * 40;
@@ -195,7 +199,7 @@ export default class TrackArenaUtil {
           if (index2 >= 1) {
             const pPre = chorse.speedData[index2 - 1];
             //跳过起点时原地踏步问题,过滤前1秒数据
-            if (pPre.t < 1) continue;
+            if (pPre.t <= 1) continue;
 
             let pathPre = chorse.speedData[index2 - 1];
             if (isSkip) {
@@ -226,5 +230,79 @@ export default class TrackArenaUtil {
       }
     }
     return resHorsePaths;
+  }
+
+  private handleBroadcastData(broadcastData) {
+    //console.log('handleBroadcastData broadcastData:', broadcastData);
+    if (!this.isPlayBroadcast) return;
+    if (broadcastData && this.raceAudioRef && this.raceBroadcastMap.size <= 0) {
+      for (const ckey in broadcastData) {
+        const item = broadcastData[ckey];
+        item.commentary = item.commentary.replace(/####/g, '');
+        const audioUrl = item.audio;
+        if (audioUrl.indexOf('####', '') > 0) {
+          const audioUrls = audioUrl.split('####');
+          audioUrls.forEach((url) => {
+            const audio = document.createElement('audio');
+            audio.src = url;
+            audio.muted = true;
+            this.raceAudioRef.current.append(audio);
+          });
+          item.audio = audioUrls;
+        } else {
+          const audio = document.createElement('audio');
+          audio.src = item.audio;
+          audio.muted = true;
+          this.raceAudioRef.current.append(audio);
+          item.audio = [item.audio];
+        }
+        this.raceBroadcastMap.set(ckey, item);
+      }
+    }
+  }
+  handlePalyBroadcast(pathT, setRaceAudioText) {
+    if (!this.isPlayBroadcast) return;
+    if (this.raceAudioRef && this.raceBroadcastMap.size > 0) {
+      //console.log('handlePalyBroadcast pathT:', { pathT });
+      const ckey = pathT.toFixed(1) + '';
+      if (this.raceBroadcastMap.has(ckey)) {
+        const broadcast = this.raceBroadcastMap.get(ckey);
+        if (broadcast.audio && broadcast.audio instanceof Array && broadcast.audio.length > 0) {
+          const audioElementsPre = this.raceAudioRef.current.querySelectorAll('audio');
+          audioElementsPre.forEach((element) => {
+            element.remove();
+          });
+          broadcast.audio.map((item, i) => {
+            const audioElem = document.createElement('audio');
+            audioElem.src = item;
+            this.raceAudioRef.current.append(audioElem);
+          });
+          const audioElements = this.raceAudioRef.current.querySelectorAll('audio');
+          let audioElemIndex = 0;
+          const handlePlayNextAudio = () => {
+            //console.log('setRaceBroadcastData handlePlayNextAudio:', { audioElemIndex, count: audioElements.length });
+            if (audioElemIndex < audioElements.length) {
+              const elem = audioElements[audioElemIndex];
+              elem.muted = false;
+              elem.volume = 1;
+              elem.play();
+              audioElemIndex++;
+              audioElements[audioElemIndex]?.addEventListener('ended', handlePlayNextAudio);
+            } else {
+              audioElemIndex = 0;
+            }
+          };
+          handlePlayNextAudio();
+          audioElements[0].addEventListener('ended', handlePlayNextAudio);
+
+          this.playBroadcastSTOId && clearTimeout(this.playBroadcastSTOId);
+          setRaceAudioText(broadcast.commentary);
+          const stoDuration = broadcast.duration + 1;
+          this.playBroadcastSTOId = setTimeout(() => {
+            setRaceAudioText('');
+          }, stoDuration * 1000);
+        }
+      }
+    }
   }
 }
