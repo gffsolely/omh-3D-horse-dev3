@@ -1,5 +1,8 @@
 import gsap from 'gsap';
 import * as THREE from 'three';
+import FontHelvetikerRegularJson from 'three/examples/fonts/helvetiker_regular.typeface.json';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader';
 
 import { getTrackColor } from '@/utils/raceUtil';
 
@@ -34,6 +37,23 @@ export const getTextureByNumber = (hNumber) => {
   ctx.fillText(hNumber, width / 2, height / 2 + 4);
   texture.needsUpdate = true;
   return texture;
+};
+
+export const getFontTextByNumber = (loadManager, hNumber) => {
+  const loader = new FontLoader(loadManager.current);
+  const font = loader.parse(FontHelvetikerRegularJson);
+  const geometry = new TextGeometry('' + hNumber, {
+    font: font,
+    size: 0.3,
+    height: 0.05,
+  });
+  const hNumMesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshBasicMaterial({
+      color: getTrackColor(hNumber),
+    })
+  );
+  return hNumMesh;
 };
 
 export const getFps = (loadManager) => {

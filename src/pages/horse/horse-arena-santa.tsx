@@ -18,6 +18,31 @@ export default function HorseBase() {
     },
   ]); //实时赛事排名
 
+  const handleRaceStart = (playSpeed) => {
+    if (liveTrackPreviewRef.current) {
+      // setTimeout(() => {
+      //   liveTrackPreviewRef.current.setRacePathPlay(true, 0);
+      //   liveTrackPreviewRef.current.setPathPlaySpeed(playSpeed);
+      // }, (6 / playSpeed) * 1000);
+      liveTrackPreviewRef.current.setRacePathPlay(true, 0);
+      liveTrackPreviewRef.current.setPathPlaySpeed(playSpeed);
+    }
+  };
+  const handleRenderSceneBy3d = () => {
+    liveTrackPreviewRef.current && liveTrackPreviewRef.current.renderSceneBy3d();
+  };
+  // const handleRacePlaySpeed = (playSpeed) => {
+  //   if (liveTrackPreviewRef.current) {
+  //     liveTrackPreviewRef.current.setPathPlaySpeed(playSpeed);
+  //   }
+  // };
+  // const handleRaceData = (data) => {
+  //   console.log('handleRaceData:', { data });
+  //   if (liveTrackPreviewRef.current) {
+  //     liveTrackPreviewRef.current.setRaceData(data);
+  //   }
+  // };
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -25,22 +50,33 @@ export default function HorseBase() {
     <div className='mg-main relative h-full w-full cursor-pointer bg-[#666]'>
       {isMounted && (
         <>
-          {/* <div className=' absolute right-4 top-[10%]  h-[9.93rem] w-[20.51rem] '>
+          <div className=' absolute right-4 top-[10%]  h-[9.93rem] w-[20.51rem] '>
+            {/* <LiveSantaTrackPreview
+              raceDataInfo={reacPathAI.data.gameRaceInfo}
+              ref={liveTrackPreviewRef}
+              CanvasBoxClass='h-full w-full '
+            /> */}
             <LiveSantaTrackPreview
               raceDataInfo={reacPathAI.data.gameRaceInfo}
               raceAwardExts={null}
               raceVideoTimeInfo={{ currentTime: 0, totalTime: 0 }}
               setRealRaceRank={setRealRaceRank}
               realPathPos={realRaceRank[0]}
-              racePlay={true}
+              racePlay={false}
               timeoutRemove={true}
               isPlayBroadcast={false}
               ref={liveTrackPreviewRef}
               CanvasBoxClass='h-full w-full '
             />
-          </div> */}
+          </div>
 
-          <TrackSantaArenaModel raceDataInfo={reacPathAI.data.gameRaceInfo} />
+          <TrackSantaArenaModel
+            raceDataInfo={reacPathAI.data.gameRaceInfo}
+            handleRaceStart={handleRaceStart}
+            handleRenderSceneBy3d={handleRenderSceneBy3d}
+            // handleRacePlaySpeed={handleRacePlaySpeed}
+            // handleRaceData={handleRaceData}
+          />
         </>
       )}
     </div>

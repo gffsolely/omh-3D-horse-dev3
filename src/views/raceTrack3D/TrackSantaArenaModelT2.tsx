@@ -10,14 +10,14 @@ import { isPc } from '@/utils';
 
 import TrackArenaUtil, {
   AnimationType,
-  getFps,
-  getTextureByNumber,
+  getFontTextByNumber,
   HorseEquipType,
   loadingHide,
   loadingShow,
 } from './TrackArenaUtil';
 
-function TrackSantaArenaModel({ raceDataInfo }, ref) {
+function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderSceneBy3d }, ref) {
+  // handleRacePlaySpeed, handleRaceData
   // console.log('TrackSantaArenaModel init:', Date.now());
   const [loaded, setLoaded] = useState(0);
   const loadManager = useRef<THREE.LoadingManager>();
@@ -62,10 +62,10 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
   const SpotLightModel = useRef<THREE.SpotLight>(null);
   const pathTerminusCamVector3 = useRef({
     isUse: false,
-    targetPos: { x: -215, y: 1, z: -120 },
-    //camPos: { x: -215.7, y: 3.7, z: -143 },
-    //{x: -214.87045333795766, y: 4.134867525437663, z: -98.21468904834492}
-    camPos: { x: -214.87, y: 3.41, z: -98.21 },
+    // targetPos: { x: -215, y: 1, z: -120 },
+    // camPos: { x: -214.87, y: 3.41, z: -98.21 },
+    targetPos: { x: -204, y: 1, z: -120 },
+    camPos: { x: -203.87, y: 3.41, z: -98.21 },
   }).current;
 
   const TrackArenaUtilInstance = useRef<TrackArenaUtil>(null);
@@ -91,7 +91,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_run_v0.3.glb';
   const horseManAnimStandModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_stand_v0.3.glb';
-  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.7.glb';
+  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.10.glb';
 
   const floorTextureRoughness = config.fileHost3d + '/omh-game/models/textures/202306/05/terrain-roughness.jpg';
   const floorTextureNormal = config.fileHost3d + '/omh-game/models/textures/202306/05/terrain-normal.jpg';
@@ -233,12 +233,17 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
       });
       HNumberModelMap.set('number' + hNumber, model);
 
-      const hTexture = getTextureByNumber(hNumber);
-      const hMesh = new THREE.Mesh(
-        hNumberBoardGeo.current,
-        new THREE.MeshBasicMaterial({ map: hTexture, side: THREE.DoubleSide })
-      );
-      hMesh.position.set(0, 3, 0);
+      // const hTexture = getTextureByNumber(hNumber);
+      // const hMesh = new THREE.Mesh(
+      //   hNumberBoardGeo.current,
+      //   new THREE.MeshBasicMaterial({ map: hTexture, side: THREE.DoubleSide })
+      // );
+      // hMesh.position.set(0, 3, 0);
+      // hMesh.rotation.y = -model.rotation.y;
+      // hMesh.name = 'horseNumberBoard' + hNumber;
+      // model.add(hMesh);
+      const hMesh = getFontTextByNumber(loadManager, hNumber);
+      hMesh.position.set(0, 2.9, 0);
       hMesh.rotation.y = -model.rotation.y;
       hMesh.name = 'horseNumberBoard' + hNumber;
       model.add(hMesh);
@@ -273,7 +278,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
         //const cVector3 = new THREE.Vector3(-437.915, 1, 120);
         const cmodel = HNumberModelMap.get('number' + HModelTrackNumbers[0]);
         const cVector3 = cmodel.position;
-        console.log('the one cVector3', cVector3);
+        //console.log('the one cVector3', cVector3);
         Camera.current.lookAt(cVector3);
         Controls.current.target.copy(cVector3);
         Controls.current.update();
@@ -312,7 +317,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     const loader = new GLTFLoader(loadManager.current);
     //horseRaceArenaModel
     loader.load(horseRaceArenaModel, (obj) => {
-      console.log('horseRaceArenaModel  obj:', obj);
+      //console.log('horseRaceArenaModel  obj:', obj);
       const model = obj.scene;
       model.position.set(62, 19.4, 38.8);
       model.rotation.y = -Math.PI;
@@ -328,6 +333,9 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
             //console.log('child.position', child.position);
             child.position.set(204, 0, -0.4); //起点位置 赛场模型 field_008
             //child.visible = false;
+          }
+          if (child.name === 'Finish_G') {
+            child.position.x = -11;
           }
           // if (child.name === 'men') {
           //   child.visible = false;
@@ -369,6 +377,19 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     // const helper = new THREE.SpotLightHelper(spotLight);
     // Scene.current.add(helper);
     // Scene.current.remove(helper);
+
+    // const spotLight = new THREE.SpotLight(0xffffff, 10, 200);
+    // spotLight.position.set(0, 120, 200);
+    // spotLight.angle = Math.PI / 6;
+    // spotLight.penumbra = 0.2;
+    // spotLight.decay = 0.3;
+    // spotLight.castShadow = true;
+    // spotLight.target.position.set(-100, 1, 70);
+    // Scene.current.add(spotLight);
+    // SpotLightModel.current = spotLight;
+    // const helper = new THREE.SpotLightHelper(spotLight);
+    // Scene.current.add(helper);
+    //Scene.current.remove(helper);
   }, []);
 
   const createSkydomeHdr = () => {
@@ -388,7 +409,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
     const skydome = new THREE.Mesh(skydomeGeometry, skydomeMaterial);
     skydome.rotation.order = 'YXZ';
     skydome.rotation.y = -Math.PI * 1.3;
-    skydome.rotation.x = -0.3;
+    skydome.rotation.x = -0.23;
     Scene.current.add(skydome);
     gsap.to(skydome.rotation, {
       y: Math.PI * 1.3,
@@ -464,10 +485,10 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
 
       Controls.current.target.copy(hNumModel.position);
       Controls.current.update();
-      if (SpotLightModel.current) {
-        SpotLightModel.current.position.set(hNumModel.position.x - 10, 20, hNumModel.position.z - 10);
-        SpotLightModel.current.target = hNumModel;
-      }
+      // if (SpotLightModel.current) {
+      //   SpotLightModel.current.position.set(hNumModel.position.x - 10, 20, hNumModel.position.z - 10);
+      //   SpotLightModel.current.target = hNumModel;
+      // }
     }
   };
 
@@ -614,6 +635,28 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
       //console.log('Current fps(1s):' + fps2.current);
       setCurrentRealFps(fps2.current);
       fps2.current = 0;
+
+      // if (pathCount.current === 0) {
+      //   const resHorsePaths: any[] = [];
+      //   for (let index = 0; index < aiRaceResult.current.length; index++) {
+      //     const chorse = aiRaceResult.current[index];
+      //     const pathPre = chorse.speedData[pathIndex.current];
+      //     resHorsePaths.push({
+      //       gameHorseId: chorse.gameHorseId,
+      //       ranking: chorse.ranking,
+      //       trackNumber: chorse.trackNumber,
+      //       interval: 0.5,
+      //       speedData: {
+      //         xa: -pathPre.xa,
+      //         ya: pathPre.za,
+      //         za: 0,
+      //         t: pathPre.t,
+      //         ranking: pathPre.ranking,
+      //       },
+      //     });
+      //   }
+      //   handleRaceData && handleRaceData(resHorsePaths);
+      // }
     }
 
     HorseManRunMixerMap.get(HorseManCurrentAnimationType.current)?.forEach((item) => {
@@ -625,6 +668,7 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
         //每秒40帧 // 25= 1000/40
         if (performance.now() - lastTimestampMS.current >= 25) {
           lastTimestampMS.current = performance.now();
+          handleRenderSceneBy3d && handleRenderSceneBy3d();
           if (pathIndex.current < aiRaceResult.current[0].speedData.length) {
             if (HorseOffsetCamVector3.current.x > 0) {
               HorseOffsetCamVector3.current.x -= 0.0298 * pathPlaySpeed.current;
@@ -895,6 +939,8 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
                 }
               }
             });
+            handleRaceStart && handleRaceStart(pathPlaySpeed.current);
+            //handleRacePlaySpeed && handleRacePlaySpeed(pathPlaySpeed.current);
           }}>
           Run
         </button>
@@ -911,7 +957,10 @@ function TrackSantaArenaModel({ raceDataInfo }, ref) {
               <button
                 key={idx}
                 className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
-                onClick={() => (lookAtTrackNumber.current = num)}>
+                onClick={() => {
+                  lookAtTrackNumber.current = num;
+                  pathTerminusCamVector3.isUse = false;
+                }}>
                 Horse {num}
               </button>
             );

@@ -73,6 +73,7 @@ function LiveSantaTrackPreview(
     setRacePathPlay,
     setPathPlaySpeed,
     setRaceTrackZoom,
+    renderSceneBy3d,
   }));
   const setRaceTrackZoom = (isZoom) => {
     isRaceTrackZoom.current = isZoom;
@@ -88,7 +89,7 @@ function LiveSantaTrackPreview(
   const setPathPlaySpeed = (speedRate: number, currentTime = 0) => {
     pathPlaySpeed.current = speedRate;
     videoPreludeTimes.current = videoPreludeTimes.current / speedRate;
-    handleRanderSTOByCTime(currentTime);
+    //handleRanderSTOByCTime(currentTime);
     //处理加减速之后点的位置
     const prePathLength = pathLength.current;
     createRacePath();
@@ -359,14 +360,24 @@ function LiveSantaTrackPreview(
           trackNumber: chorse.trackNumber,
           speedData: [],
         });
+        //let isSkip = true;
         for (let index2 = 0; index2 < chorse.speedData.length; index2++) {
           if (index2 >= 1) {
+            // const pPre = chorse.speedData[index2 - 1];
+            // //跳过起点时原地踏步问题,过滤前1秒数据
+            // if (pPre.t <= 1) continue;
+            //let pathPre = chorse.speedData[index2 - 1];
+            // if (isSkip) {
+            //   pathPre = chorse.speedData[0];
+            //   isSkip = false;
+            // }
+
             const pathPre = chorse.speedData[index2 - 1];
             const cxaPre = pathPre.xa * wRatio;
-            const cyaPre = -pathPre.ya * hRatio * 1.2;
+            const cyaPre = -pathPre.ya * hRatio;
             const path = chorse.speedData[index2];
             const cxa = path.xa * wRatio;
-            const cya = -path.ya * hRatio * 1.2;
+            const cya = -path.ya * hRatio;
             const cxaDiff = (cxa - cxaPre) / segCount.current;
             const cyaDiff = (cya - cyaPre) / segCount.current;
             for (let index3 = 0; index3 < segCount.current; index3++) {
@@ -418,49 +429,89 @@ function LiveSantaTrackPreview(
   }, [CanvasBox, HorseNumberMap]);
 
   const renderScene = useCallback(() => {
+    // if (canvasCTX.current && HorseNumberMap.size > 0) {
+    //   //pathCount.current < 1 只跑一圈
+    //   if (pathCount.current < 1 && racePathPlay.current) {
+    //     //每秒40帧 // 25= 1000/40
+    //     //if (performance.now() - lastTimestampMS.current >= Math.floor(25 / pathPlaySpeed.current)) {
+    //     if (performance.now() - lastTimestampMS.current >= 25) {
+    //       lastTimestampMS.current = performance.now();
+    //       if (pathIndex.current < aiRaceResult.current[0].speedData.length) {
+    //         rerDraw();
+    //         const tmpRaceRank = [];
+    //         for (let index = 0; index < HorseNumberMap.size; index++) {
+    //           const raceRes = aiRaceResult.current[index];
+    //           const numTag = HorseNumberMap.get('number' + raceRes.trackNumber) as NumTag;
+    //           const path = raceRes.speedData[pathIndex.current];
+    //           const cxa = path.xa;
+    //           const cya = path.ya;
+    //           numTag.draw2(canvasCTX.current, cxa + 2, getCurrPathYa(cya, index, pathIndex.current));
+    //           if (pathIndex.current % segCount.current === 0) {
+    //             if (index === 0) {
+    //               handlePalyBroadcast(path.t);
+    //             }
+    //             if (path.ranking === 1) {
+    //               handleHorseNumPos(numTag);
+    //             }
+    //             tmpRaceRank.push({
+    //               pathIndex: pathIndex.current,
+    //               pathCount: pathCount.current,
+    //               gameHorseId: raceRes.gameHorseId,
+    //               rankEnd: raceRes.ranking,
+    //               ranking: path.ranking,
+    //             });
+    //           }
+    //         }
+    //         tmpRaceRank && tmpRaceRank.length > 0 && setRealRaceRank(tmpRaceRank);
+    //         pathIndex.current++;
+    //       } else {
+    //         pathIndex.current = 0;
+    //         pathCount.current++;
+    //       }
+    //     }
+    //   }
+    // }
+    // ReqAFrameId.current = window.requestAnimationFrame(() => renderScene());
+  }, []);
+
+  const renderSceneBy3d = useCallback(() => {
     if (canvasCTX.current && HorseNumberMap.size > 0) {
       //pathCount.current < 1 只跑一圈
       if (pathCount.current < 1 && racePathPlay.current) {
-        //每秒40帧 // 25= 1000/40
-        //if (performance.now() - lastTimestampMS.current >= Math.floor(25 / pathPlaySpeed.current)) {
-        if (performance.now() - lastTimestampMS.current >= 25) {
-          lastTimestampMS.current = performance.now();
-          if (pathIndex.current < aiRaceResult.current[0].speedData.length) {
-            rerDraw();
-            const tmpRaceRank = [];
-            for (let index = 0; index < HorseNumberMap.size; index++) {
-              const raceRes = aiRaceResult.current[index];
-              const numTag = HorseNumberMap.get('number' + raceRes.trackNumber) as NumTag;
-              const path = raceRes.speedData[pathIndex.current];
-              const cxa = path.xa;
-              const cya = path.ya;
-              numTag.draw2(canvasCTX.current, cxa + 2, getCurrPathYa(cya, index, pathIndex.current));
-              if (pathIndex.current % segCount.current === 0) {
-                if (index === 0) {
-                  handlePalyBroadcast(path.t);
-                }
-                if (path.ranking === 1) {
-                  handleHorseNumPos(numTag);
-                }
-                tmpRaceRank.push({
-                  pathIndex: pathIndex.current,
-                  pathCount: pathCount.current,
-                  gameHorseId: raceRes.gameHorseId,
-                  rankEnd: raceRes.ranking,
-                  ranking: path.ranking,
-                });
+        if (pathIndex.current < aiRaceResult.current[0].speedData.length) {
+          rerDraw();
+          const tmpRaceRank = [];
+          for (let index = 0; index < HorseNumberMap.size; index++) {
+            const raceRes = aiRaceResult.current[index];
+            const numTag = HorseNumberMap.get('number' + raceRes.trackNumber) as NumTag;
+            const path = raceRes.speedData[pathIndex.current];
+            const cxa = path.xa;
+            const cya = path.ya;
+            numTag.draw2(canvasCTX.current, cxa + 2, getCurrPathYa(cya, index, pathIndex.current));
+            if (pathIndex.current % segCount.current === 0) {
+              if (index === 0) {
+                handlePalyBroadcast(path.t);
               }
+              if (path.ranking === 1) {
+                handleHorseNumPos(numTag);
+              }
+              tmpRaceRank.push({
+                pathIndex: pathIndex.current,
+                pathCount: pathCount.current,
+                gameHorseId: raceRes.gameHorseId,
+                rankEnd: raceRes.ranking,
+                ranking: path.ranking,
+              });
             }
-            tmpRaceRank && tmpRaceRank.length > 0 && setRealRaceRank(tmpRaceRank);
-            pathIndex.current++;
-          } else {
-            pathIndex.current = 0;
-            pathCount.current++;
           }
+          tmpRaceRank && tmpRaceRank.length > 0 && setRealRaceRank(tmpRaceRank);
+          pathIndex.current++;
+        } else {
+          pathIndex.current = 0;
+          pathCount.current++;
         }
       }
     }
-    ReqAFrameId.current = window.requestAnimationFrame(() => renderScene());
   }, []);
 
   //#endregion
@@ -471,7 +522,7 @@ function LiveSantaTrackPreview(
       setView();
       //console.log('aiRaceResult.current:', aiRaceResult.current);
       if (aiRaceResult.current && aiRaceResult.current.length > 0) {
-        handleRanderSTOByCTime(raceVideoTimeInfo.currentTime);
+        //handleRanderSTOByCTime(raceVideoTimeInfo.currentTime);
       }
       window.addEventListener('resize', setView);
     }
@@ -527,6 +578,9 @@ const CanvasBoxStyled = styled.div`
     background-size: cover;
     background-repeat: no-repeat;
     transition: 0.7s;
+    > canvas {
+      transform: translate(-0.3125rem, 0);
+    }
   }
 `;
 
