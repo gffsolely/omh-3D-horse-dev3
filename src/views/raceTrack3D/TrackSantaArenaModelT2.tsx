@@ -91,7 +91,9 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_run_v0.3.glb';
   const horseManAnimStandModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_stand_v0.3.glb';
-  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.10.glb';
+  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.11.glb';
+  const horseRaceArenaPlacardModel =
+    config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_placard_v0.2.glb';
 
   const floorTextureRoughness = config.fileHost3d + '/omh-game/models/textures/202306/05/terrain-roughness.jpg';
   const floorTextureNormal = config.fileHost3d + '/omh-game/models/textures/202306/05/terrain-normal.jpg';
@@ -244,10 +246,12 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       // model.add(hMesh);
       const hMesh = getFontTextByNumber(loadManager, hNumber);
       hMesh.position.set(0, 2.9, 0);
-      hMesh.rotation.y = -model.rotation.y;
+      hMesh.rotation.y = -Math.PI / 2; //-model.rotation.y;
+      //hMesh.rotation.y = -4.28;
       hMesh.name = 'horseNumberBoard' + hNumber;
       model.add(hMesh);
       HNumberBoardModelMap.set(hNumber, hMesh);
+      //console.log('HNumberBoardModelMap:', HNumberBoardModelMap);
 
       TrackArenaUtilInstance.current.setHorseEquipTexture(
         { type: HorseEquipType.Saddle, baseTextrueUrl: horseEquipSaddle_R, lightTextrueUrl: horseEquipSaddleLED_R },
@@ -317,7 +321,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     const loader = new GLTFLoader(loadManager.current);
     //horseRaceArenaModel
     loader.load(horseRaceArenaModel, (obj) => {
-      //console.log('horseRaceArenaModel  obj:', obj);
+      console.log('horseRaceArenaModel  obj:', obj);
       const model = obj.scene;
       model.position.set(62, 19.4, 38.8);
       model.rotation.y = -Math.PI;
@@ -325,6 +329,8 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       model.castShadow = true;
       model.receiveShadow = true;
 
+      // let childBillboard10 = null;
+      // let extendBillboard1 = null;
       model.traverse(function (child: THREE.Mesh) {
         if (child.isObject3D) {
           child.castShadow = true;
@@ -336,6 +342,12 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
           }
           if (child.name === 'Finish_G') {
             child.position.x = -11;
+          }
+          if (child.name === 'guanggao_10') {
+            child.visible = false;
+          }
+          if (child.name === 'jianzhu_20' || child.name === 'jianzhu_11' || child.name === 'jianzhu_12') {
+            child.visible = false;
           }
           // if (child.name === 'men') {
           //   child.visible = false;
@@ -349,6 +361,17 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
         }
       });
       HorseRaceArenaModelObj.current = model;
+      Scene.current.add(model);
+    });
+
+    //horseRaceArenaPlacardModel
+    loader.load(horseRaceArenaPlacardModel, (obj) => {
+      console.log('horseRaceArenaPlacardModel  obj:', obj);
+      const model = obj.scene;
+      model.position.set(-438, 0, 100);
+      model.rotation.y = -Math.PI;
+      model.name = 'horseRaceArenaPlacard01';
+      model.receiveShadow = true;
       Scene.current.add(model);
     });
   }, []);
@@ -698,7 +721,11 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
                   numModel.rotation.y = -Math.PI / 2 + path.r;
                 }
                 const hnbModel = HNumberBoardModelMap.get(raceRes.trackNumber + '');
-                hnbModel && (hnbModel.rotation.y = -numModel.rotation.y);
+                if (hnbModel) {
+                  hnbModel.rotation.y = -(-Math.PI / 2 + path.r);
+                  //处理号码牌 旋转后位置不居中的问题
+                  path.r < Math.PI * 2 && (hnbModel.position.z = (path.r - Math.PI) / 10);
+                }
                 if (HModelTrackNumbers.includes(lookAtTrackNumber.current)) {
                   if (raceRes.trackNumber === lookAtTrackNumber.current) {
                     handlePathCamera(numModel);

@@ -58,13 +58,6 @@ export default function HorseBase() {
             /> */}
             <LiveSantaTrackPreview
               raceDataInfo={reacPathAI.data.gameRaceInfo}
-              raceAwardExts={null}
-              raceVideoTimeInfo={{ currentTime: 0, totalTime: 0 }}
-              setRealRaceRank={setRealRaceRank}
-              realPathPos={realRaceRank[0]}
-              racePlay={false}
-              timeoutRemove={true}
-              isPlayBroadcast={false}
               ref={liveTrackPreviewRef}
               CanvasBoxClass='h-full w-full '
             />
