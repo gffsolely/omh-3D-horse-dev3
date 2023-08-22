@@ -3,15 +3,16 @@ import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { config } from '@/config';
+import { getRandomUUID } from '@/utils';
 import { getFieldTypeByFieldId } from '@/utils/raceUtil';
-import TrackSantaArenaModelWS from '@/views/raceTrack3D/TrackSantaArenaModelWS';
+import LiveSantaTrackPreview from '@/views/raceTrack2D/LiveSantaTrackPreviewWSV3';
+import TrackSantaArenaModelWS from '@/views/raceTrack3D/TrackSantaArenaModelWSV3';
 
 import reacPathAI from '~/models/json/rece-standard-3horse-ws.json';
-import { getRandomUUID } from '@/utils';
 
 export default function Live3DTest() {
-  const liveTrackPreviewRef = useRef(null);
-  const liveTrackPreviewWSRef = useRef(null);
+  const liveTrack2DPreviewWSRef = useRef(null);
+  const liveTrack3DArenaWSRef = useRef(null);
   const stompWsURLRef = useRef(config.aiApiBaseHostWS + '/live');
   const inputRaceIdRef = useRef(null);
   const stompWsRaceIdRef = useRef('');
@@ -35,6 +36,10 @@ export default function Live3DTest() {
 
   const apiData = reacPathAI;
 
+  const handleRenderSceneBy3d = () => {
+    liveTrack2DPreviewWSRef.current && liveTrack2DPreviewWSRef.current.renderSceneBy3d();
+  };
+
   const handleOnConnect = (frame) => {
     // console.log('handleOnConnect Successfully connected !! frame:', frame);
     const subc = stompClientRef.current.subscribe('/platform/' + stompWsRaceIdRef.current, (msg) => {
@@ -44,10 +49,10 @@ export default function Live3DTest() {
           const body = JSON.parse(msg.body + '');
           if (body) {
             handleSendSpeedData(body);
-            //handleSendBroadcast(body);
+            handleSendBroadcast(body);
           }
         } else {
-          liveTrackPreviewWSRef.current && liveTrackPreviewWSRef.current.stopRace();
+          liveTrack3DArenaWSRef.current && liveTrack3DArenaWSRef.current.stopRace();
         }
       }
     });
@@ -96,9 +101,10 @@ export default function Live3DTest() {
     }
     //console.log('handleSendSpeedData resHorsePaths:', resHorsePaths);
 
-    liveTrackPreviewWSRef.current &&
-      resHorsePaths.length > 0 &&
-      liveTrackPreviewWSRef.current.setRaceData(resHorsePaths);
+    if (resHorsePaths.length > 0) {
+      liveTrack3DArenaWSRef.current && liveTrack3DArenaWSRef.current.setRaceData(resHorsePaths);
+      liveTrack2DPreviewWSRef.current && liveTrack2DPreviewWSRef.current.setRaceData(resHorsePaths);
+    }
   };
 
   //let sendBroadcastIdx = 0;
@@ -114,7 +120,7 @@ export default function Live3DTest() {
           duration: mbAudioT,
           commentary: mbTexts.join(' '),
         };
-        liveTrackPreviewWSRef.current && liveTrackPreviewWSRef.current.setRaceBroadcastData(broadcastData);
+        liveTrack3DArenaWSRef.current && liveTrack3DArenaWSRef.current.setRaceBroadcastData(broadcastData);
       }
     }
   };
@@ -192,10 +198,58 @@ export default function Live3DTest() {
           docile: 3.0,
           irritable: 3.0,
         },
+        {
+          gameHorseId: '50004',
+          trackNumber: 4,
+          playerId: 'p4',
+          hlv: 1,
+          spd: 18,
+          sta: 14,
+          stg: 15,
+          agi: 14,
+          start: 3.0,
+          finish: 3.0,
+          explosive: 3.0,
+          endurance: 3.0,
+          docile: 3.0,
+          irritable: 3.0,
+        },
+        {
+          gameHorseId: '50005',
+          trackNumber: 5,
+          playerId: 'p5',
+          hlv: 1,
+          spd: 19,
+          sta: 16,
+          stg: 17,
+          agi: 16,
+          start: 3.0,
+          finish: 3.0,
+          explosive: 3.0,
+          endurance: 3.0,
+          docile: 3.0,
+          irritable: 3.0,
+        },
+        {
+          gameHorseId: '50006',
+          trackNumber: 6,
+          playerId: 'p6',
+          hlv: 1,
+          spd: 19,
+          sta: 17,
+          stg: 15,
+          agi: 18,
+          start: 3.0,
+          finish: 3.0,
+          explosive: 3.0,
+          endurance: 3.0,
+          docile: 3.0,
+          irritable: 3.0,
+        },
       ],
     };
-    apiData.data.gameRaceInfo.fieldModelId = raceHorseInfoData.fieldId;
-    apiData.data.gameRaceInfo.areaLength = raceHorseInfoData.distance;
+    // apiData.data.gameRaceInfo.fieldModelId = raceHorseInfoData.fieldId;
+    // apiData.data.gameRaceInfo.areaLength = raceHorseInfoData.distance;
     const apiHost = config.aiApiBaseHost;
     fetch(apiHost + '/race/platform/register', {
       method: 'post',
@@ -260,7 +314,7 @@ export default function Live3DTest() {
   }, []);
 
   return (
-    <div className=' h-full w-full'>
+    <div className='relative h-full w-full cursor-pointer bg-[#111]'>
       <div className='  flex  flex-col items-center  '>
         <div
           className={` fixed left-[50%] top-[50%] z-10 flex -translate-x-1/2 flex-col items-center  ${
@@ -289,13 +343,21 @@ export default function Live3DTest() {
             }}
           />
         </div>
+
         {LiveData && (
           <>
-            {fieldType === 'Standard' ? (
-              <></>
-            ) : (
-              <TrackSantaArenaModelWS ref={liveTrackPreviewWSRef} raceDataInfo={reacPathAI.data.gameRaceInfo} />
-            )}
+            <div className=' absolute right-4 top-[10%]  h-[9.93rem] w-[20.51rem] '>
+              <LiveSantaTrackPreview
+                raceDataInfo={reacPathAI.data.gameRaceInfo}
+                ref={liveTrack2DPreviewWSRef}
+                CanvasBoxClass='h-full w-full '
+              />
+            </div>
+            <TrackSantaArenaModelWS
+              ref={liveTrack3DArenaWSRef}
+              handleRenderScene={handleRenderSceneBy3d}
+              raceDataInfo={reacPathAI.data.gameRaceInfo}
+            />
           </>
         )}
       </div>

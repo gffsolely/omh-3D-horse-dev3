@@ -39,6 +39,26 @@ export const getTextureByNumber = (hNumber) => {
   return texture;
 };
 
+export const getVideoTexture = (videoUrl, loadManager, isEncoding = true, muted = true) => {
+  const videoElem = document.createElement('video');
+  videoElem.src = videoUrl;
+  videoElem.loop = true;
+  videoElem.muted = muted;
+  videoElem.autoplay;
+  videoElem.crossOrigin = 'anonymous';
+  loadManager.current.itemStart(videoUrl);
+  videoElem.onloadeddata = () => {
+    loadManager.current.itemEnd(videoUrl);
+  };
+  videoElem.play();
+
+  const texture_video = new THREE.VideoTexture(videoElem);
+  texture_video.minFilter = THREE.LinearFilter;
+  texture_video.magFilter = THREE.LinearFilter;
+  isEncoding && (texture_video.encoding = THREE.sRGBEncoding);
+  return texture_video;
+};
+
 export const getFontTextByNumber = (loadManager, hNumber) => {
   const loader = new FontLoader(loadManager.current);
   const font = loader.parse(FontHelvetikerRegularJson);

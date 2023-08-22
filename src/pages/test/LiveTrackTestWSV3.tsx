@@ -3,10 +3,10 @@ import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { config } from '@/config';
+import { getRandomUUID } from '@/utils';
 import { getFieldTypeByFieldId } from '@/utils/raceUtil';
 
 import reacPathAI from '~/models/json/rece-standard-3horse-ws.json';
-import { getRandomUUID } from '@/utils';
 
 export default function LiveTrackTest() {
   const liveTrackPreviewRef = useRef(null);
@@ -17,9 +17,6 @@ export default function LiveTrackTest() {
   const stompWsRaceIdRef = useRef('');
   const stompClientRef = useRef<Client>(null);
   const [LiveData, setLiveData] = useState(null);
-  const [raceRank, setRaceRank] = useState([]); //比赛排行榜
-  const pathIndex = useRef(0);
-  const [stompSub, setStompSub] = useState<StompSubscription>();
   const [realRaceRank, setRealRaceRank] = useState([
     {
       pathIndex: 0,
@@ -31,67 +28,94 @@ export default function LiveTrackTest() {
   ]); //实时赛事排名
 
   const [fieldType, setFieldType] = useState('Standard'); //赛场类型
-  const [isRaceTrackZoom, setIsRaceTrackZoom] = useState(false);
   const [rdmRaceId, setRdmRaceId] = useState(getRandomUUID(12));
 
   const apiData = reacPathAI;
 
   const handleOnConnect = (frame) => {
     console.log('handleOnConnect Successfully connected !! frame:', frame);
-    const subc = stompClientRef.current.subscribe('/platform/' + stompWsRaceIdRef.current, (msg) => {
+    const subc = stompClientRef.current.subscribe('/user/player/action/ans', (msg) => {
       console.log('handleOnConnect subscribe msg:', msg);
-      if (msg && msg.body && msg.body !== 'race finished!') {
-        const body = JSON.parse(msg.body + '');
-        if (body) {
-          // handleSendSpeedData(body);
-          // handleSendBroadcast(body);
-        }
-      }
+      // if (msg && msg.body && msg.body !== 'race finished!') {
+      //   const body = JSON.parse(msg.body + '');
+      //   if (body) {
+      //     // handleSendSpeedData(body);
+      //     // handleSendBroadcast(body);
+      //   }
+      // }
     });
-    setStompSub(subc);
+    const raceId = '3213131';
+    const subc2 = stompClientRef.current.subscribe(`/live/${raceId}`, (msg) => {
+      console.log('handleOnConnect subscribe2 msg:', msg);
+    });
+
+    const payLoad = {
+      cmd: '1',
+    };
+    stompClientRef.current.publish({ destination: '/race/player/action', body: JSON.stringify(payLoad) });
   };
 
-  // const handleSendSpeedData = (msgBody) => {
-  //   const resHorsePaths: any[] = [];
-  //   let msgTNumber = 0;
-  //   for (const ckey in msgBody) {
-  //     if (!['text', 'url', 'audio_t'].includes(ckey)) {
-  //       const vals = msgBody[ckey];
-  //       //console.log('handleSendSpeedData vals:', vals);
-  //       if (vals.length >= 15) {
-  //         const path = { t: 0, xa: 0, ya: 0, ranking: 0 };
-  //         vals.map((val, i) => {
-  //           switch (i) {
-  //             case 0:
-  //               path.t = val;
-  //               break;
-  //             case 1:
-  //               path.xa = val;
-  //               break;
-  //             case 2:
-  //               path.ya = val;
-  //               break;
-  //             case 13:
-  //               path.ranking = val;
-  //               break;
-  //           }
-  //         });
+  const handleSendSpeedData = (msgBody) => {
+    const resHorsePaths: any[] = [];
+    let msgTNumber = 0;
+    const pathT = msgBody.t || 0;
+    for (const ckey in msgBody) {
+      if (!['text', 'url', 'audio_t', 't'].includes(ckey)) {
+        const vals = msgBody[ckey];
+        //console.log('handleSendSpeedData vals:', vals);
+        if (vals.length >= 21) {
+          const path = {
+            t: pathT,
+            xa: 0,
+            ya: 0,
+            yz: 0,
+            ranking: 0,
+            r: 0,
+            isFinish: false,
+            finishTime: null,
+            skill: null,
+          };
+          vals.map((val, i) => {
+            switch (i) {
+              case 1:
+                path.xa = val;
+                break;
+              case 2:
+                path.ya = val;
+                break;
+              case 10:
+                path.r = val; //direction
+                break;
+              case 11:
+                path.ranking = val;
+                break;
+              case 18:
+                path.isFinish = val;
+                break;
+              case 19:
+                path.finishTime = val;
+                break;
+              case 20:
+                path.skill = val;
+                break;
+            }
+          });
 
-  //         msgTNumber += 1;
-  //         resHorsePaths.push({
-  //           gameHorseId: ckey,
-  //           ranking: path.ranking,
-  //           trackNumber: msgTNumber,
-  //           speedData: path,
-  //         });
-  //       }
-  //     }
-  //   }
-  //   //console.log('handleSendSpeedData resHorsePaths:', resHorsePaths);
-  //   liveTrackPreviewWSRef.current &&
-  //     resHorsePaths.length > 0 &&
-  //     liveTrackPreviewWSRef.current.setRaceData(resHorsePaths);
-  // };
+          msgTNumber += 1;
+          resHorsePaths.push({
+            gameHorseId: ckey,
+            ranking: path.ranking,
+            trackNumber: msgTNumber,
+            speedData: path,
+          });
+        }
+      }
+    }
+    //console.log('handleSendSpeedData resHorsePaths:', resHorsePaths);
+    liveTrackPreviewWSRef.current &&
+      resHorsePaths.length > 0 &&
+      liveTrackPreviewWSRef.current.setRaceData(resHorsePaths);
+  };
 
   // //let sendBroadcastIdx = 0;
   // const handleSendBroadcast = (msgBody) => {
@@ -124,10 +148,13 @@ export default function LiveTrackTest() {
   // };
 
   const handleStompClientConnect = () => {
+    const token = 'afsfefdsfefa',
+      raceId = '3213131',
+      horseId = '11110313';
+    stompClientRef.current.connectHeaders = { token, raceId, horseId };
     stompClientRef.current.activate();
   };
   const handleStompClientDisconnect = () => {
-    stompSub?.unsubscribe();
     stompClientRef.current.forceDisconnect();
     stompClientRef.current
       .deactivate()
@@ -227,23 +254,25 @@ export default function LiveTrackTest() {
     });
   };
 
-  const initStompClient = (token, raceId, horseId) => {
+  const initStompClient = () => {
     /**
-     
 连接地址：ws://54.184.14.108:7102/v3
-监听地址：/user/player/action/ans
-headers：token      raceId      horseId
-send：{
-    "cmd": '2' 
-}
 
+玩家自己连接ws时：
+  headers：connectHeaders: { token, raceId, horseId } （需要发送的header参数）
+  接收数据频道：/user/player/action/ans (用于接收自己的准备状态)
+  接收比赛曲线数据频道：/live/{raceId} (用于接收其他玩家的准备状态与比赛实时曲线数据)
+  发送指令频道：/race/player/action (用于发送准备与取消准备指令；用于发送技能释放指令)
+
+观众接收数据
+ headers：connectHeaders: { raceId }
+ 接收比赛曲线数据频道： /live/{raceId}(用于接收其他玩家的准备状态与比赛实时曲线数据)
      */
     stompClientRef.current = new Client({
       brokerURL: stompWsURLRef.current,
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      connectHeaders: { token, raceId, horseId },
       onConnect: handleOnConnect,
       onDisconnect: () => {
         console.log('handleOnDisconnect Disconnected');
@@ -264,18 +293,10 @@ send：{
     // setLiveData(apiData.data.gameRaceInfo);
     // setRaceRank(apiData.data.gameRaceAwardExts);
     // stompWsRaceIdRef.current = inputRaceIdRef.current.value; ///apiData.data.gameRaceInfo.id;
-
-    const token = '',
-      raceId = 3213131,
-      horseId = 11110313;
-    initStompClient(token, raceId, horseId);
     handleStompClientConnect();
   };
-  // useEffect(() => {
-  //   console.log('useEffect LiveData:', LiveData);
-  //   LiveData && handleStompClientConnect();
-  // }, [LiveData]);
   useEffect(() => {
+    initStompClient();
     return () => {
       handleStompClientDisconnect();
     };

@@ -13,124 +13,120 @@ function LiveSantaTrackPreviewWS({ raceDataInfo, CanvasBoxClass }, ref) {
   const canvasCTX = useRef<CanvasRenderingContext2D>(null);
   const HorseNumberMap = useRef<Map<string, NumTag>>(new Map()).current;
   const canvasElemRect = useRef<any>();
-  const ReqAFrameId = useRef(0);
   const segCount = useRef(20); //把每0.5秒的点继续分割 20 // 0.1秒分割4
-  const raceResult = useRef<any[]>([]);
   const aiRaceResult = useRef<any[]>([]);
+  const aiRaceResultCurr = useRef([]);
   const aiRaceResultPre = useRef<any[]>([]);
   const pathIndex = useRef(0);
-  const pathIdxTime = useRef(0);
   const pagePathIndex = useRef(0); //当前页面全局累加的PathIndex
-  const lastTimestampMS = useRef(0);
   const basePathW = useRef(800 + 12 * 14);
   const basePathH = useRef(238 + 12 * 14);
   const diffRatio = useRef(1);
   const raceHorseCount = useRef(12);
-  const pathPlaySpeed = useRef(1); //曲线播放速度 //1 1倍速，2 2倍速,...
   const BoxViewSize = useRef<{ w: number; h: number }>({
     w: 2286,
     h: 1182,
   }).current;
 
   const pagePathPreT = useRef(-1);
-  const playBroadcastSTOId = useRef(null);
-  const RaceAudioRef = useRef(null);
-  const [raceAudioText, setRaceAudioText] = useState('');
-  const isRaceTrackZoom = useRef(false); //跑道是否放大
 
   useImperativeHandle(ref, () => ({
     setRaceData,
-    setPathPlaySpeed,
+    renderSceneBy3d,
   }));
 
-  const setPathPlaySpeed = (speedRate: number) => {
-    pathPlaySpeed.current = speedRate;
-    segCount.current = segCount.current / pathPlaySpeed.current;
-  };
-
   const setRaceData = (data) => {
-    //console.log('LiveTrackPreviewWS setRaceData', { data });
-    if (data && data.length > 0 && data[0].interval) {
-      //判断坐标点间隔时长，//0.5~0.1   // interval 后端返回500ms
-      //segCount.current = (data[0].interval / 1000) * 40;
-      segCount.current = data[0].interval * 40;
-      segCount.current = segCount.current / pathPlaySpeed.current;
-    }
-
+    //console.log('LiveSantaTrackPreviewWS setRaceData', { data });
+    const currPathT = data[0]?.speedData?.t === undefined ? -1 : data[0].speedData.t;
     if (aiRaceResultPre.current.length <= 0 && data && data.length > 0) {
       pagePathPreT.current = data[0]?.speedData?.t === undefined ? -1 : data[0].speedData.t;
       aiRaceResultPre.current = data;
-      raceHorseCount.current = aiRaceResultPre.current.length;
-      // const rds = diffRatio.current * 7;
+      //console.log('LiveSantaTrackPreviewWS setRaceData', { data });
       const rds = diffRatio.current * (BoxViewSize.w < 600 ? 10 : 12);
       for (let index = 0; index < aiRaceResultPre.current.length; index++) {
         //当前赛道最多支持12匹马
         if (index < 12) {
           const chorse = aiRaceResultPre.current[index];
-          createHNumber(chorse.trackNumber + '', rds, 0, getTrackColor(chorse.trackNumber + ''));
+          const path = chorse.speedData;
+          const wRatio = BoxViewSize.w / basePathW.current;
+          const hRatio = BoxViewSize.h / basePathH.current;
+          const cxa = path.xa * wRatio;
+          const cya = -path.ya * hRatio;
+          createHNumber(chorse.trackNumber + '', rds, getTrackColor(chorse.trackNumber + ''), cxa, cya, index);
         }
       }
+      //跳过前5秒
     } else {
-      aiRaceResult.current = data;
-      // if (pagePathPreT.current !== -1) {
-      //   const pInterval = data[0].speedData.t - pagePathPreT.current - 0.05;
-      //   console.log('setRaceData else pagePathPreT:', {
-      //     pagePathPreT: pagePathPreT.current,
-      //     speedData0: data[0].speedData,
-      //     pInterval,
-      //   });
-      //   segCount.current = pInterval * 40;
-      //   pagePathPreT.current = -1;
-      // }
-      // segCount.current = segCount.current / pathPlaySpeed.current;
-      const resHorsePaths: any[] = [];
-      const pathW = basePathW.current,
-        pathH = basePathH.current;
-      const wRatio = BoxViewSize.w / pathW;
-      const hRatio = BoxViewSize.h / pathH;
-      for (let index = 0; index < aiRaceResultPre.current.length; index++) {
-        const chorse = aiRaceResultPre.current[index];
-        resHorsePaths.push({
-          gameHorseId: chorse.gameHorseId,
-          ranking: chorse.ranking,
-          trackNumber: chorse.trackNumber,
-          speedData: [],
+      if (pagePathPreT.current !== -1) {
+        const pInterval = data[0].speedData.t - pagePathPreT.current - 0.05;
+        console.log('setRaceData else pagePathPreT:', {
+          pagePathPreT: pagePathPreT.current,
+          speedData0: data[0].speedData,
+          pInterval,
         });
-        const pathPre = chorse.speedData;
-        const cxaPre = pathPre.xa * wRatio;
-        const cyaPre = -pathPre.ya * hRatio;
-        const path = aiRaceResult.current[index].speedData;
-        pathIdxTime.current = path.t;
-        const cxa = path.xa * wRatio;
-        const cya = -path.ya * hRatio;
-        const cxaDiff = (cxa - cxaPre) / segCount.current;
-        const cyaDiff = (cya - cyaPre) / segCount.current;
-        for (let index3 = 0; index3 < segCount.current; index3++) {
-          resHorsePaths[index].speedData.push({
-            //xa: Math.abs(dirX + cxaPre + cxaDiff * index3),
-            xa: cxaPre + cxaDiff * index3,
-            ya: cyaPre + cyaDiff * index3,
-            ranking: pathPre.ranking,
-          });
-        }
+        segCount.current = pInterval * 40;
+        pagePathPreT.current = -1;
       }
-      raceResult.current = resHorsePaths;
-      pathIndex.current = 0;
-      aiRaceResultPre.current = aiRaceResult.current;
+
+      if (currPathT > 5) {
+        aiRaceResultCurr.current = data;
+        if (pagePathPreT.current !== -1) {
+          const pInterval = data[0].speedData.t - pagePathPreT.current - 0.05;
+          console.log('setRaceData else pagePathPreT:', {
+            pagePathPreT: pagePathPreT.current,
+            speedData0: data[0].speedData,
+            pInterval,
+          });
+          segCount.current = pInterval * 40;
+          pagePathPreT.current = -1;
+        }
+        const resHorsePaths: any[] = [];
+        const pathW = basePathW.current,
+          pathH = basePathH.current;
+        const wRatio = BoxViewSize.w / pathW;
+        const hRatio = BoxViewSize.h / pathH;
+        for (let index = 0; index < aiRaceResultPre.current.length; index++) {
+          const chorse = aiRaceResultPre.current[index];
+          resHorsePaths.push({
+            gameHorseId: chorse.gameHorseId,
+            ranking: chorse.ranking,
+            trackNumber: chorse.trackNumber,
+            speedData: [],
+          });
+          const pathPre = chorse.speedData;
+          const cxaPre = pathPre.xa * wRatio;
+          const cyaPre = -pathPre.ya * hRatio;
+          const path = aiRaceResultCurr.current[index].speedData;
+          const cxa = path.xa * wRatio;
+          const cya = -path.ya * hRatio;
+          const cxaDiff = (cxa - cxaPre) / segCount.current;
+          const cyaDiff = (cya - cyaPre) / segCount.current;
+          for (let index3 = 0; index3 < segCount.current; index3++) {
+            resHorsePaths[index].speedData.push({
+              //xa: Math.abs(dirX + cxaPre + cxaDiff * index3),
+              xa: cxaPre + cxaDiff * index3,
+              ya: cyaPre + cyaDiff * index3,
+              ranking: pathPre.ranking,
+            });
+          }
+        }
+        aiRaceResult.current = resHorsePaths;
+        pathIndex.current = 0;
+        aiRaceResultPre.current = aiRaceResultCurr.current;
+      }
     }
   };
 
-  const createHNumber = useCallback((num: string, rds = 10, y = null, color = 'red') => {
+  const createHNumber = (num: string, rds = 10, color = 'red', x = 0, y = 0, idx = 0) => {
     if (canvasElem.current && canvasCTX.current) {
       //const rect = canvasElem.current.getBoundingClientRect();
-      const cx = null;
-      const cy = y;
       const radius = rds;
       const ccolor = color;
-      const tag = new NumTag(cx, cy, radius, ccolor, num);
+      const tag = new NumTag(x, y, radius, ccolor, num);
+      tag.draw2(canvasCTX.current, x + 2, getCurrPathYa(y, idx, pagePathIndex.current));
       HorseNumberMap.set(tag.name, tag);
     }
-  }, []);
+  };
 
   const init = useCallback(() => {
     canvasElem.current = document.createElement('canvas');
@@ -140,33 +136,23 @@ function LiveSantaTrackPreviewWS({ raceDataInfo, CanvasBoxClass }, ref) {
     canvasElem.current.height = BoxViewSize.h;
   }, [CanvasBox, HorseNumberMap]);
 
-  const renderScene = useCallback(() => {
+  const renderSceneBy3d = useCallback(() => {
     if (canvasCTX.current && HorseNumberMap.size > 0) {
-      if (raceResult.current && raceResult.current.length > 0) {
-        if (performance.now() - lastTimestampMS.current >= 25) {
-          lastTimestampMS.current = performance.now();
-          if (pathIndex.current < raceResult.current[0].speedData.length) {
-            rerDraw();
-            for (let index = 0; index < HorseNumberMap.size; index++) {
-              const raceRes = raceResult.current[index];
-              const numTag = HorseNumberMap.get('number' + raceRes.trackNumber) as NumTag;
-              const path = raceRes.speedData[pathIndex.current];
-              const cxa = path.xa;
-              const cya = path.ya;
-              numTag.draw2(canvasCTX.current, cxa + 2, getCurrPathYa(cya, index, pagePathIndex.current));
-              if (pathIndex.current % segCount.current === 0) {
-                // if (path.ranking === 1) {
-                //   //handleHorseNumPos(numTag);
-                // }
-              }
-            }
-            pathIndex.current++;
-            pagePathIndex.current++;
-          }
+      if (pathIndex.current < aiRaceResult.current[0].speedData.length) {
+        rerDraw();
+        for (let index = 0; index < HorseNumberMap.size; index++) {
+          const raceRes = aiRaceResult.current[index];
+          const numTag = HorseNumberMap.get('number' + raceRes.trackNumber) as NumTag;
+          const path = raceRes.speedData[pathIndex.current];
+          const cxa = path.xa;
+          const cya = path.ya;
+          numTag.draw2(canvasCTX.current, cxa + 2, getCurrPathYa(cya, index, pagePathIndex.current));
+          //console.log('renderSceneBy3d path:', path);
         }
+        pathIndex.current++;
+        pagePathIndex.current++;
       }
     }
-    ReqAFrameId.current = window.requestAnimationFrame(() => renderScene());
   }, []);
 
   const getCurrPathYa = (ya, idx, pathIdx = 0) => {
@@ -213,12 +199,10 @@ function LiveSantaTrackPreviewWS({ raceDataInfo, CanvasBoxClass }, ref) {
     if (isMounted) {
       init();
       setView();
-      renderScene();
       window.addEventListener('resize', setView);
     }
     return () => {
       window.removeEventListener('resize', setView);
-      cancelAnimationFrame(ReqAFrameId.current);
       HorseNumberMap.clear();
       canvasCTX.current = null;
       canvasElem.current = null;
@@ -249,6 +233,9 @@ const CanvasBoxStyled = styled.div`
     background-size: cover;
     background-repeat: no-repeat;
     transition: 0.6s;
+    > canvas {
+      transform: translate(-0.3125rem, 0);
+    }
   }
 `;
 
