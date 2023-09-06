@@ -61,8 +61,8 @@ function TrackSantaArenaModelWS({ raceDataInfo, handleRenderScene }, ref) {
   const HorseOffsetCamVector3 = useRef({ x: 17.9, y: 6.64, z: 30 });
   const pathTerminusCamVector3 = useRef({
     isUse: false,
-    targetPos: { x: -198, y: 1, z: -120 },
-    camPos: { x: -198.6, y: 3.41, z: -98.21 },
+    targetPos: { x: -165.59, y: 1, z: -120 },
+    camPos: { x: -165.92, y: 6.97, z: -98.85 },
   }).current;
   const raceIsStarted = useRef(false);
 
@@ -82,6 +82,7 @@ function TrackSantaArenaModelWS({ raceDataInfo, handleRenderScene }, ref) {
 
   //#region fileHost3d
   const scene360Hdr = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien_4K.hdr';
+  const sceneEnvHdrJpg = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien_tocation_1.jpg';
   const horseManBaseModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_base_model_v0.2.glb';
   const horseManAnimSprintModel =
@@ -90,7 +91,7 @@ function TrackSantaArenaModelWS({ raceDataInfo, handleRenderScene }, ref) {
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_run_v0.3.glb';
   const horseManAnimStandModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_stand_v0.3.glb';
-  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.12.glb';
+  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.16.glb';
   const horseRaceArenaPlacardModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_placard_v0.2.glb';
   const horseArenaPlacardVideo = config.fileHost3d + '/omh-game/models/videos/202308/05/ad01851030711.mp4';
@@ -198,8 +199,9 @@ function TrackSantaArenaModelWS({ raceDataInfo, handleRenderScene }, ref) {
     //console.log('TrackSantaArenaModelWS setRaceData', { data });
     const currPathT = data[0]?.speedData?.t === undefined ? -1 : data[0].speedData.t;
     if (aiRaceResultPre.current.length <= 0 && data && data.length > 0) {
-      pagePathPreT.current = data[0]?.speedData?.t === undefined ? -1 : data[0].speedData.t;
+      //pagePathPreT.current = data[0]?.speedData?.t === undefined ? -1 : data[0].speedData.t;
       aiRaceResultPre.current = data;
+      segCount.current = 0.4 * 40;
       console.log('TrackSantaArenaModelWS setRaceData', { data });
       for (let index = 0; index < aiRaceResultPre.current.length; index++) {
         //当前赛道最多支持12匹马
@@ -212,16 +214,16 @@ function TrackSantaArenaModelWS({ raceDataInfo, handleRenderScene }, ref) {
       }
       //跳过前5秒
     } else {
-      if (pagePathPreT.current !== -1) {
-        const pInterval = data[0].speedData.t - pagePathPreT.current - 0.05;
-        console.log('setRaceData else pagePathPreT:', {
-          pagePathPreT: pagePathPreT.current,
-          speedData0: data[0].speedData,
-          pInterval,
-        });
-        segCount.current = pInterval * 40;
-        pagePathPreT.current = -1;
-      }
+      // if (pagePathPreT.current !== -1) {
+      //   const pInterval = data[0].speedData.t - pagePathPreT.current - 0.05;
+      //   console.log('setRaceData else pagePathPreT:', {
+      //     pagePathPreT: pagePathPreT.current,
+      //     speedData0: data[0].speedData,
+      //     pInterval,
+      //   });
+      //   segCount.current = pInterval * 40;
+      //   pagePathPreT.current = -1;
+      // }
 
       if (currPathT > 5) {
         !raceIsStarted.current && handleArenaRaceStart();
@@ -245,6 +247,7 @@ function TrackSantaArenaModelWS({ raceDataInfo, handleRenderScene }, ref) {
           const cyaDiff = (cya - cyaPre) / segCount.current;
           for (let index3 = 0; index3 < segCount.current; index3++) {
             resHorsePaths[index].speedData.push({
+              isZero: index3 === 0,
               xa: cxaPre + cxaDiff * index3,
               ya: 1,
               za: cyaPre + cyaDiff * index3,
@@ -410,8 +413,12 @@ function TrackSantaArenaModelWS({ raceDataInfo, handleRenderScene }, ref) {
           if (child.name === 'qipao_G') {
             child.position.set(204, 0, -0.4); //起点位置 赛场模型 field_008
           }
-          if (child.name === 'Finish_G') {
-            child.position.x = -16;
+          if (child.name === 'Finish_G' || child.name === 'Finish') {
+            child.position.x = 230;
+            // Finish_G  -11
+          }
+          if (child.name === 'kantai_G') {
+            child.position.x = -46;
           }
           if (child.name === 'guanggao_10') {
             child.visible = false;
@@ -499,7 +506,10 @@ function TrackSantaArenaModelWS({ raceDataInfo, handleRenderScene }, ref) {
       repeat: -1,
     });
 
-    Scene.current.environment = panoramaTexture;
+    const sEnvTexture = new THREE.TextureLoader(loadManager.current).load(sceneEnvHdrJpg);
+    sEnvTexture.mapping = THREE.EquirectangularReflectionMapping;
+    sEnvTexture.flipY = false;
+    Scene.current.environment = sEnvTexture;
     Render.current.outputEncoding = THREE.sRGBEncoding;
   };
 

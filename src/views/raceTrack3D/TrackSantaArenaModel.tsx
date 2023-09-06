@@ -63,11 +63,34 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const SpotLightModel = useRef<THREE.SpotLight>(null);
   const pathTerminusCamVector3 = useRef({
     isUse: false,
-    // targetPos: { x: -215, y: 1, z: -120 },
-    // camPos: { x: -214.87, y: 3.41, z: -98.21 },
-    targetPos: { x: -204, y: 1, z: -120 },
-    camPos: { x: -203.87, y: 3.41, z: -98.21 },
+    // targetPos: { x: -165.59, y: 1, z: -120 },
+    // camPos: { x: -165.92, y: 6.97, z: -98.85 },
+    targetPos: { x: -166.9, y: 1, z: -120 },
+    camPos: { x: -166.7, y: 7.46, z: -99.2 },
   }).current;
+  //Camera position: Vector3 {x: -165.92116439960844, y: 6.969887703837041, z: -98.84837899961313}
+
+  /*
+
+"id": 7,
+			"name": "Santa Anita 7f",
+			"totalTracks": 16,
+			"trackWidthEach": 1.5,
+			"trackLength": 1408.176,
+			"perimeter": 1609.34,
+			"createAt": "07-06-2023 11:40:51",
+			"supportedCurves": "1400",
+			"unit": "Imperial",
+			"startX": 437.915726,
+			"startY": 119,
+			"startZ": 0,
+			"endX": 165.59,
+			"endY": -119,
+			"endZ": 0,
+			"extension": 224,
+			"startAngle": 3.14159,
+
+*/
 
   const TrackArenaUtilInstance = useRef<TrackArenaUtil>(null);
 
@@ -84,6 +107,8 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
 
   //#region fileHost3d
   const scene360Hdr = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien_4K.hdr';
+  const sceneEnvHdrJpg = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien_tocation_1.jpg';
+  //const sceneEnvHdr = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien1080.hdr';
   const horseManBaseModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_base_model_v0.2.glb';
   const horseManAnimSprintModel =
@@ -92,7 +117,9 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_run_v0.3.glb';
   const horseManAnimStandModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_stand_v0.3.glb';
-  const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.12.glb';
+  //const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.16.glb';
+  //https://omh-game-ui-assets.s3.ap-east-1.amazonaws.com/omh-game/models/model/202309/06/horse_race_arena_santa_v0.1/arena_1.glb
+  const horseRaceArenaModelPath = config.fileHost3d + '/omh-game/models/model/202309/06/horse_race_arena_santa_v0.1/'; //arena_1.glb
   const horseRaceArenaPlacardModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_placard_v0.2.glb';
   const horseArenaPlacardVideo = config.fileHost3d + '/omh-game/models/videos/202308/05/ad01851030711.mp4';
@@ -319,49 +346,59 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const loaderGlgRaceArena = useCallback(() => {
     const loader = new GLTFLoader(loadManager.current);
     //horseRaceArenaModel
-    loader.load(horseRaceArenaModel, (obj) => {
-      //console.log('horseRaceArenaModel  obj:', obj);
-      const model = obj.scene;
-      model.position.set(62, 19.4, 38.8);
-      model.rotation.y = -Math.PI;
-      model.name = 'horseRaceArenaModel';
-      model.castShadow = true;
-      model.receiveShadow = true;
-
-      // let childBillboard10 = null;
-      // let extendBillboard1 = null;
-      model.traverse(function (child: THREE.Mesh) {
-        if (child.isObject3D) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-          if (child.name === 'qipao_G') {
-            //console.log('child.position', child.position);
-            child.position.set(204, 0, -0.4); //起点位置 赛场模型 field_008
-            //child.visible = false;
+    const hRArenaModelGroup = new THREE.Group();
+    for (let index = 1; index <= 5; index++) {
+      const modelFile = horseRaceArenaModelPath + 'arena_' + index + '.glb';
+      loader.load(modelFile, (obj) => {
+        console.log('horseRaceArenaModel ' + index + ' obj:', obj);
+        const model = obj.scene;
+        model.position.set(62, 19.4, 38.8);
+        model.rotation.y = -Math.PI;
+        model.name = 'horseRaceArenaModel' + index;
+        model.castShadow = true;
+        model.receiveShadow = true;
+        hRArenaModelGroup.add(model);
+        model.traverse(function (child: THREE.Mesh) {
+          if (child.isObject3D) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.name === 'qipao_G') {
+              //console.log('child.position', child.position);
+              child.position.set(204.4, 0, -0.3); //起点位置 赛场模型 field_008
+              //child.visible = false;
+            }
+            if (child.name === 'Finish_G' || child.name === 'Finish') {
+              child.position.x = -47.5;
+              // const tmpV3 = new THREE.Vector3();
+              // child.getWorldPosition(tmpV3);
+              // console.log('Scene.current.getWorldPosition(child.position):', tmpV3);
+              // Finish_G  -11
+            }
+            if (child.name === 'kantai_G') {
+              child.position.x = 230;
+            }
+            if (child.name === 'guanggao_10') {
+              child.visible = false;
+            }
+            if (child.name === 'pingfang_7') {
+              child.visible = false;
+            }
+            if (child.name === 'men') {
+              child.position.z = 1733;
+            }
           }
-          if (child.name === 'Finish_G') {
-            child.position.x = -11;
+          if (child.isMesh) {
+            if (child.name === 'qipao_G') {
+              //console.log('child.position', child.position);
+              child.position.set(204, 0, -0.4); //起点位置 赛场模型 field_008
+            }
           }
-          if (child.name === 'guanggao_10') {
-            child.visible = false;
-          }
-          if (child.name === 'jianzhu_20' || child.name === 'jianzhu_11' || child.name === 'jianzhu_12') {
-            child.visible = false;
-          }
-          // if (child.name === 'men') {
-          //   child.visible = false;
-          // }
-        }
-        if (child.isMesh) {
-          if (child.name === 'qipao_G') {
-            //console.log('child.position', child.position);
-            child.position.set(204, 0, -0.4); //起点位置 赛场模型 field_008
-          }
-        }
+        });
       });
-      HorseRaceArenaModelObj.current = model;
-      Scene.current.add(model);
-    });
+    }
+
+    HorseRaceArenaModelObj.current = hRArenaModelGroup;
+    Scene.current.add(hRArenaModelGroup);
 
     const wallVTexture = getVideoTexture(horseArenaPlacardVideo, loadManager, false);
     loader.load(horseRaceArenaPlacardModel, (obj) => {
@@ -428,7 +465,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
 
   const createSkydomeHdr = () => {
     const panoramaTexture = new RGBELoader(loadManager.current).load(scene360Hdr);
-    panoramaTexture.mapping = THREE.EquirectangularReflectionMapping;
+    //panoramaTexture.mapping = THREE.EquirectangularReflectionMapping;
     const skydomeMaterial = new THREE.MeshBasicMaterial({
       map: panoramaTexture,
       side: THREE.BackSide,
@@ -464,7 +501,13 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     // const skybox = new GroundProjectedSkybox(panoramaTexture);
     // skybox.scale.setScalar(1000);
     // Scene.current.add(skybox);
-    Scene.current.environment = panoramaTexture;
+    //Scene.current.environment = panoramaTexture;
+
+    const sEnvTexture = new THREE.TextureLoader(loadManager.current).load(sceneEnvHdrJpg);
+    //const sEnvTexture = new RGBELoader(loadManager.current).load(sceneEnvHdr);
+    sEnvTexture.mapping = THREE.EquirectangularReflectionMapping;
+    sEnvTexture.flipY = false;
+    Scene.current.environment = sEnvTexture;
     Render.current.outputEncoding = THREE.sRGBEncoding;
   };
 
@@ -911,7 +954,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
         loadingShow();
         handleHorseMansRunAction();
         renderScene();
-      }, 500);
+      }, 100);
     }
   }, [loaded]);
 
