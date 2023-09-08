@@ -3,15 +3,16 @@ import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { config } from '@/config';
+import { getRandomUUID } from '@/utils';
 import { getFieldTypeByFieldId } from '@/utils/raceUtil';
-import LiveSantaTrackPreviewWS from '@/views/raceTrack2D/LiveSantaTrackPreviewWSZoom';
+import LiveSantaTrackPreview from '@/views/raceTrack2D/LiveSantaTrackPreviewWSV3';
+import TrackSantaArenaModelWS from '@/views/raceTrack3D/TrackSantaArenaModelWSV3';
 
 import reacPathAI from '~/models/json/rece-standard-3horse-ws.json';
-import { getRandomUUID } from '@/utils';
 
-export default function LiveTrackTest() {
-  const liveTrackPreviewRef = useRef(null);
-  const liveTrackPreviewWSRef = useRef(null);
+export default function Live3DTest() {
+  const liveTrack2DPreviewWSRef = useRef(null);
+  const liveTrack3DArenaWSRef = useRef(null);
   const stompWsURLRef = useRef(config.aiApiBaseHostWS + '/live');
   const inputRaceIdRef = useRef(null);
   const stompWsRaceIdRef = useRef('');
@@ -31,20 +32,27 @@ export default function LiveTrackTest() {
   ]); //实时赛事排名
 
   const [fieldType, setFieldType] = useState('Standard'); //赛场类型
-  const [isRaceTrackZoom, setIsRaceTrackZoom] = useState(false);
   const [rdmRaceId, setRdmRaceId] = useState(getRandomUUID(12));
 
   const apiData = reacPathAI;
+
+  const handleRenderSceneBy3d = () => {
+    liveTrack2DPreviewWSRef.current && liveTrack2DPreviewWSRef.current.renderSceneBy3d();
+  };
 
   const handleOnConnect = (frame) => {
     // console.log('handleOnConnect Successfully connected !! frame:', frame);
     const subc = stompClientRef.current.subscribe('/platform/' + stompWsRaceIdRef.current, (msg) => {
       //console.log('handleOnConnect subscribe msg:', msg);
-      if (msg && msg.body && msg.body !== 'race finished!') {
-        const body = JSON.parse(msg.body + '');
-        if (body) {
-          handleSendSpeedData(body);
-          handleSendBroadcast(body);
+      if (msg && msg.body) {
+        if (msg.body !== 'race finished!') {
+          const body = JSON.parse(msg.body + '');
+          if (body) {
+            handleSendSpeedData(body);
+            handleSendBroadcast(body);
+          }
+        } else {
+          liveTrack3DArenaWSRef.current && liveTrack3DArenaWSRef.current.stopRace();
         }
       }
     });
@@ -54,12 +62,13 @@ export default function LiveTrackTest() {
   const handleSendSpeedData = (msgBody) => {
     const resHorsePaths: any[] = [];
     let msgTNumber = 0;
+    //currPathT = 0;
     for (const ckey in msgBody) {
       if (!['text', 'url', 'audio_t'].includes(ckey)) {
         const vals = msgBody[ckey];
         //console.log('handleSendSpeedData vals:', vals);
         if (vals.length >= 15) {
-          const path = { t: 0, xa: 0, ya: 0, ranking: 0 };
+          const path = { t: 0, xa: 0, ya: 0, ranking: 0, direction: 0.0 };
           vals.map((val, i) => {
             switch (i) {
               case 0:
@@ -73,6 +82,9 @@ export default function LiveTrackTest() {
                 break;
               case 13:
                 path.ranking = val;
+                break;
+              case 14:
+                path.direction = val;
                 break;
             }
           });
@@ -88,9 +100,11 @@ export default function LiveTrackTest() {
       }
     }
     //console.log('handleSendSpeedData resHorsePaths:', resHorsePaths);
-    liveTrackPreviewWSRef.current &&
-      resHorsePaths.length > 0 &&
-      liveTrackPreviewWSRef.current.setRaceData(resHorsePaths);
+
+    if (resHorsePaths.length > 0) {
+      liveTrack3DArenaWSRef.current && liveTrack3DArenaWSRef.current.setRaceData(resHorsePaths);
+      liveTrack2DPreviewWSRef.current && liveTrack2DPreviewWSRef.current.setRaceData(resHorsePaths);
+    }
   };
 
   //let sendBroadcastIdx = 0;
@@ -106,19 +120,7 @@ export default function LiveTrackTest() {
           duration: mbAudioT,
           commentary: mbTexts.join(' '),
         };
-        liveTrackPreviewWSRef.current && liveTrackPreviewWSRef.current.setRaceBroadcastData(broadcastData);
-
-        // for (let index = 0; index < mbTexts.length; index++) {
-        //   const broadcastData = {
-        //     audio: mbUrls[index],
-        //     duration: mbAudioT,
-        //     commentary: mbTexts[index],
-        //   };
-        //   //#TODO 临时处理，测试数据时语音太多，人为过滤播放
-        //   if (sendBroadcastIdx % 20 === 0)
-        //     liveTrackPreviewWSRef.current && liveTrackPreviewWSRef.current.setRaceBroadcastData(broadcastData);
-        //   sendBroadcastIdx++;
-        // }
+        liveTrack3DArenaWSRef.current && liveTrack3DArenaWSRef.current.setRaceBroadcastData(broadcastData);
       }
     }
   };
@@ -142,9 +144,9 @@ export default function LiveTrackTest() {
   const handlePostRace = (raceId) => {
     //The Race distance is not valid, we support 1000, 1200, 1400, 1600, 1800, 1900'
     const raceHorseInfoData = {
-      fieldId: 'field_002',
+      fieldId: 'field_008',
       gameRaceId: raceId,
-      distance: 1600,
+      distance: 1400,
       maxLevel: 0,
       minLevel: 0,
       horses: [
@@ -196,10 +198,58 @@ export default function LiveTrackTest() {
           docile: 3.0,
           irritable: 3.0,
         },
+        {
+          gameHorseId: '50004',
+          trackNumber: 4,
+          playerId: 'p4',
+          hlv: 1,
+          spd: 18,
+          sta: 14,
+          stg: 15,
+          agi: 14,
+          start: 3.0,
+          finish: 3.0,
+          explosive: 3.0,
+          endurance: 3.0,
+          docile: 3.0,
+          irritable: 3.0,
+        },
+        {
+          gameHorseId: '50005',
+          trackNumber: 5,
+          playerId: 'p5',
+          hlv: 1,
+          spd: 19,
+          sta: 16,
+          stg: 17,
+          agi: 16,
+          start: 3.0,
+          finish: 3.0,
+          explosive: 3.0,
+          endurance: 3.0,
+          docile: 3.0,
+          irritable: 3.0,
+        },
+        {
+          gameHorseId: '50006',
+          trackNumber: 6,
+          playerId: 'p6',
+          hlv: 1,
+          spd: 19,
+          sta: 17,
+          stg: 15,
+          agi: 18,
+          start: 3.0,
+          finish: 3.0,
+          explosive: 3.0,
+          endurance: 3.0,
+          docile: 3.0,
+          irritable: 3.0,
+        },
       ],
     };
-    apiData.data.gameRaceInfo.fieldModelId = raceHorseInfoData.fieldId;
-    apiData.data.gameRaceInfo.areaLength = raceHorseInfoData.distance;
+    // apiData.data.gameRaceInfo.fieldModelId = raceHorseInfoData.fieldId;
+    // apiData.data.gameRaceInfo.areaLength = raceHorseInfoData.distance;
     const apiHost = config.aiApiBaseHost;
     fetch(apiHost + '/race/platform/register', {
       method: 'post',
@@ -233,7 +283,6 @@ export default function LiveTrackTest() {
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      connectHeaders: {},
       onConnect: handleOnConnect,
       onDisconnect: () => {
         console.log('handleOnDisconnect Disconnected');
@@ -256,10 +305,6 @@ export default function LiveTrackTest() {
     stompWsRaceIdRef.current = inputRaceIdRef.current.value; ///apiData.data.gameRaceInfo.id;
     handleStompClientConnect();
   };
-  // useEffect(() => {
-  //   console.log('useEffect LiveData:', LiveData);
-  //   LiveData && handleStompClientConnect();
-  // }, [LiveData]);
   useEffect(() => {
     initStompClient();
 
@@ -269,7 +314,7 @@ export default function LiveTrackTest() {
   }, []);
 
   return (
-    <div className=' h-full w-full'>
+    <div className='relative h-full w-full cursor-pointer bg-[#111]'>
       <div className='  flex  flex-col items-center  '>
         <div
           className={` fixed left-[50%] top-[50%] z-10 flex -translate-x-1/2 flex-col items-center  ${
@@ -292,34 +337,27 @@ export default function LiveTrackTest() {
             width={100}
             height={100}
             src='/models/2d/btns/play.png'
-            className='custom-cursor-pointer h-18 w-18'
+            className='custom-cursor-pointer h-14 w-14'
             onClick={() => {
               handleStartPlay();
             }}
           />
         </div>
+
         {LiveData && (
           <>
-            <button
-              className=' m-4 rounded bg-blue-400 p-2 text-3xl text-white shadow shadow-blue-200'
-              onClick={() => {
-                liveTrackPreviewWSRef.current && liveTrackPreviewWSRef.current.setRaceTrackZoom(!isRaceTrackZoom);
-                setIsRaceTrackZoom(!isRaceTrackZoom);
-              }}>
-              {isRaceTrackZoom ? 'exit zoom' : 'zoom'}
-            </button>
-            {fieldType === 'Standard' ? (
-              <></>
-            ) : (
-              <LiveSantaTrackPreviewWS
-                raceDataInfo={LiveData}
-                raceAwardExts={raceRank}
-                setRealRaceRank={setRealRaceRank}
-                isPlayBroadcast={true}
-                ref={liveTrackPreviewWSRef}
-                CanvasBoxClass='h-[calc(100%-3.375rem)] w-[calc(100%-3.375rem)]  bg-slate-700 '
+            <div className=' absolute right-4 top-[10%]  h-[9.93rem] w-[20.51rem] '>
+              <LiveSantaTrackPreview
+                raceDataInfo={reacPathAI.data.gameRaceInfo}
+                ref={liveTrack2DPreviewWSRef}
+                CanvasBoxClass='h-full w-full '
               />
-            )}
+            </div>
+            <TrackSantaArenaModelWS
+              ref={liveTrack3DArenaWSRef}
+              handleRenderScene={handleRenderSceneBy3d}
+              raceDataInfo={reacPathAI.data.gameRaceInfo}
+            />
           </>
         )}
       </div>
