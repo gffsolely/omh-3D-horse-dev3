@@ -1,10 +1,15 @@
 import Link from 'next/link';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
-export default function indexPage() {
+//import SoundArenaUtil from '@/views/raceTrack3D/TrackArenaSoundUtil';
+
+export default function IndexPage() {
+  // useEffect(() => {
+  //   SoundArenaUtil.init(null);
+  // }, []);
   return (
     <Layout>
       <Seo />

@@ -257,8 +257,9 @@ export default class TrackArenaUtil {
             const cyaDiff = (cya - cyaPre) / segCount.current;
             for (let index3 = 0; index3 < segCount.current; index3++) {
               resHorsePaths[index].speedData.push({
+                isZero: index3 === 0,
                 xa: cxaPre + cxaDiff * index3,
-                ya: 1,
+                ya: -1,
                 za: cyaPre + cyaDiff * index3,
                 t: pathPre.t,
                 r: pathPre.direction,

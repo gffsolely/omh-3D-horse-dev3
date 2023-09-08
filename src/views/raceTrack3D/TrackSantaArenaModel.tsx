@@ -8,6 +8,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 import { config } from '@/config';
 import { isPc } from '@/utils';
 
+import SoundArenaUtil from './TrackArenaSoundUtil';
 import TrackArenaUtil, {
   AnimationType,
   getFontTextByNumber,
@@ -33,8 +34,15 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const ReqAFrameId = useRef(0);
   const CurrentLookAtHModel = useRef<THREE.Object3D>(); //当前视角的目标模型
   const ModelObjBoxGroup = useRef<THREE.Group>();
-  //const HorseOffsetCamVector3 = useRef({ x: 0, y: 3, z: 15 }); // (0, 2, 10); //(21, 4, -3); //基础相机位置与目标位置的偏移量
-  const HorseOffsetCamVector3 = useRef({ x: 17.9, y: 6.64, z: 30 });
+  const HorseOffsetCamVector3 = useRef({ x: 0, y: 3, z: 12 }); // (0, 2, 10); //(21, 4, -3); //基础相机位置与目标位置的偏移量
+  //const HorseOffsetCamVector3 = useRef({ x: 17.9, y: 6.64, z: 30 });
+  const HRaceBeginOffsetCamVector3 = useRef({
+    camOffset: { x: 28, y: 3.4, z: -0.37 },
+    targetOffset: { x: 0, y: 0, z: 10 },
+    camOffsetOri: { x: 28, y: 3.4, z: -0.37 }, //ori用于过渡动画使用
+    targetOffsetOri: { x: 0, y: 0, z: 10 },
+  });
+  const HorseUserOffsetCamVector3 = useRef({ x: -4, y: 2.75, z: 0 });
 
   const HorseRaceArenaModelObj = useRef(null);
   const HorseManRunModelObjs = useRef([]).current;
@@ -44,7 +52,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const HAnimationTimeScale = useRef(null); //模型动画播放速度的倍数   //150fps及以上为 0.4
 
   const HorseManCurrentAnimationType = useRef(AnimationType.Stand);
-  const HorseManAnimationFps = useRef(60);
 
   const HNumberModelMap = useRef<Map<string, THREE.Object3D>>(new Map()).current;
   const HNumberBoardModelMap = useRef<Map<string, THREE.Object3D>>(new Map()).current;
@@ -65,10 +72,9 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     isUse: false,
     // targetPos: { x: -165.59, y: 1, z: -120 },
     // camPos: { x: -165.92, y: 6.97, z: -98.85 },
-    targetPos: { x: -166.9, y: 1, z: -120 },
-    camPos: { x: -166.7, y: 7.46, z: -99.2 },
+    targetPos: { x: -167.41, y: 4.28, z: -121.14 },
+    camPos: { x: -167.396, y: 10.976, z: -101 },
   }).current;
-  //Camera position: Vector3 {x: -165.92116439960844, y: 6.969887703837041, z: -98.84837899961313}
 
   /*
 
@@ -114,12 +120,12 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const horseManAnimSprintModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_sprint_v0.3.glb';
   const horseManAnimRunModel =
-    config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_run_v0.3.glb';
+    config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_run_v0.4.glb';
   const horseManAnimStandModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_stand_v0.3.glb';
   //const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.16.glb';
   //https://omh-game-ui-assets.s3.ap-east-1.amazonaws.com/omh-game/models/model/202309/06/horse_race_arena_santa_v0.1/arena_1.glb
-  const horseRaceArenaModelPath = config.fileHost3d + '/omh-game/models/model/202309/06/horse_race_arena_santa_v0.1/'; //arena_1.glb
+  const horseRaceArenaModelPath = config.fileHost3d + '/omh-game/models/model/202309/06/horse_race_arena_santa_v0.3/'; //arena_1.glb
   const horseRaceArenaPlacardModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_placard_v0.2.glb';
   const horseArenaPlacardVideo = config.fileHost3d + '/omh-game/models/videos/202308/05/ad01851030711.mp4';
@@ -300,18 +306,25 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       if (HModelTrackNumbers.length === HorseManRunModelObjs.length) {
         //handleHorseMansRunAction();
         //handlePathCamera(model);
-        CurrentLookAtHModel.current = model;
         //起点相机位置 赛场模型 field_008
-        //Camera.current.position.set(-424.78, 5.89, 140);
-        //Vector3 {x: -420.03504875570786, y: 7.642706935385061, z: 151.1506522962127}
-        Camera.current.position.set(-420, 7.64, 151.1);
-        //const cVector3 = new THREE.Vector3(-437.915, 1, 120);
+        //Camera.current.position.set(-420, 7.64, 151.1);
+        //Camera.current.position.set(-410, 7.43, 132.2);
         const cmodel = HNumberModelMap.get('number' + HModelTrackNumbers[0]);
-        const cVector3 = cmodel.position;
-        //console.log('the one cVector3', cVector3);
-        Camera.current.lookAt(cVector3);
-        Controls.current.target.copy(cVector3);
-        Controls.current.update();
+        // const hcv = HorseOffsetCamVector3.current;
+        // const hrbcvC = HRaceBeginOffsetCamVector3.current.camOffset;
+        // Camera.current.position
+        //   .copy(cmodel.position)
+        //   .add(new THREE.Vector3(hcv.x + hrbcvC.x, hcv.y + hrbcvC.y, hcv.z + hrbcvC.z));
+        // const cVector3 = cmodel.position;
+        // //const cVector3 = new THREE.Vector3(-437.9, 1, 130);
+        // //console.log('the one cVector3', cVector3);
+
+        // const hrbcvT = HRaceBeginOffsetCamVector3.current.targetOffset;
+        // cVector3.add(new THREE.Vector3(hrbcvT.x, hrbcvT.y, hrbcvT.z));
+        // Camera.current.lookAt(cVector3);
+        // Controls.current.target.copy(cVector3);
+        // Controls.current.update();
+        handlePathCamera(cmodel);
       }
     });
   }, []);
@@ -350,9 +363,9 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     for (let index = 1; index <= 5; index++) {
       const modelFile = horseRaceArenaModelPath + 'arena_' + index + '.glb';
       loader.load(modelFile, (obj) => {
-        console.log('horseRaceArenaModel ' + index + ' obj:', obj);
+        //console.log('horseRaceArenaModel ' + index + ' obj:', obj);
         const model = obj.scene;
-        model.position.set(62, 19.4, 38.8);
+        model.position.set(62, 17.4, 39);
         model.rotation.y = -Math.PI;
         model.name = 'horseRaceArenaModel' + index;
         model.castShadow = true;
@@ -364,18 +377,18 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
             child.receiveShadow = true;
             if (child.name === 'qipao_G') {
               //console.log('child.position', child.position);
-              child.position.set(204.4, 0, -0.3); //起点位置 赛场模型 field_008
+              child.position.set(204.4, 0, -0.1); //起点位置 赛场模型 field_008
               //child.visible = false;
             }
             if (child.name === 'Finish_G' || child.name === 'Finish') {
               child.position.x = -47.5;
-              // const tmpV3 = new THREE.Vector3();
-              // child.getWorldPosition(tmpV3);
-              // console.log('Scene.current.getWorldPosition(child.position):', tmpV3);
-              // Finish_G  -11
             }
-            if (child.name === 'kantai_G') {
-              child.position.x = 230;
+            if (child.name === 'kantai_G' || child.name === 'ren_G') {
+              child.position.x = -46;
+            }
+            if (child.name === 'gaolouA_G') {
+              //console.log('gaolouA_G child:', child);
+              child.position.x = 2000;
             }
             if (child.name === 'guanggao_10') {
               child.visible = false;
@@ -388,10 +401,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
             }
           }
           if (child.isMesh) {
-            if (child.name === 'qipao_G') {
-              //console.log('child.position', child.position);
-              child.position.set(204, 0, -0.4); //起点位置 赛场模型 field_008
-            }
+            //
           }
         });
       });
@@ -404,8 +414,8 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     loader.load(horseRaceArenaPlacardModel, (obj) => {
       //console.log('horseRaceArenaPlacardModel  obj:', obj);
       const model = obj.scene;
-      model.position.set(-438, 0, 100);
-      model.rotation.y = -Math.PI;
+      model.position.set(-460, 0, 105);
+      model.rotation.y = -Math.PI + 0.2;
       model.name = 'horseRaceArenaPlacard01';
       model.receiveShadow = true;
       Scene.current.add(model);
@@ -551,21 +561,35 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     if (pathTerminusCamVector3.isUse) return;
     if (Camera.current && hNumModel && Controls.current) {
       CurrentLookAtHModel.current = hNumModel;
-      Camera.current.position.copy(hNumModel.position);
+      // Camera.current.position.copy(hNumModel.position);
+      // const hcv = HorseOffsetCamVector3.current;
+      // Camera.current.position.add(new THREE.Vector3(hcv.x, hcv.y, hcv.z));
+      // Camera.current.lookAt(hNumModel.position);
+
+      // // Camera2.current.position.copy(hNumModel.position);
+      // // Camera2.current.position.add(new THREE.Vector3(-20, 30, 2)); //相机2 增加相对与目标物体的位置偏移
+      // // Camera2.current.lookAt(0, 0, 0);
+
+      // Controls.current.target.copy(hNumModel.position);
+      // Controls.current.update();
+      // // if (SpotLightModel.current) {
+      // //   SpotLightModel.current.position.set(hNumModel.position.x - 10, 20, hNumModel.position.z - 10);
+      // //   SpotLightModel.current.target = hNumModel;
+      // // }
+
       const hcv = HorseOffsetCamVector3.current;
-      Camera.current.position.add(new THREE.Vector3(hcv.x, hcv.y, hcv.z));
-      Camera.current.lookAt(hNumModel.position);
+      const hrbcvC = HRaceBeginOffsetCamVector3.current.camOffset;
+      const hcvx = hNumModel.position.z > 0 ? hcv.x : -hcv.x;
+      Camera.current.position
+        .copy(hNumModel.position)
+        .add(new THREE.Vector3(hcvx + hrbcvC.x, hcv.y + hrbcvC.y, hcv.z + hrbcvC.z));
 
-      // Camera2.current.position.copy(hNumModel.position);
-      // Camera2.current.position.add(new THREE.Vector3(-20, 30, 2)); //相机2 增加相对与目标物体的位置偏移
-      // Camera2.current.lookAt(0, 0, 0);
-
-      Controls.current.target.copy(hNumModel.position);
+      const hrbcvT = HRaceBeginOffsetCamVector3.current.targetOffset;
+      const cVector3 = hNumModel.position.clone();
+      cVector3.add(new THREE.Vector3(hrbcvT.x, hrbcvT.y + 1.6, hrbcvT.z));
+      Camera.current.lookAt(cVector3);
+      Controls.current.target.copy(cVector3);
       Controls.current.update();
-      // if (SpotLightModel.current) {
-      //   SpotLightModel.current.position.set(hNumModel.position.x - 10, 20, hNumModel.position.z - 10);
-      //   SpotLightModel.current.target = hNumModel;
-      // }
     }
   };
 
@@ -681,7 +705,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       Controls.current.maxPolarAngle = Math.PI / 2;
       Controls.current.minPolarAngle = Math.PI / 4;
       Controls.current.maxDistance = 200;
-      Controls.current.minDistance = 10;
+      Controls.current.minDistance = 6;
       Controls.current.enabled = false;
       if (endCamera === Camera2.current) {
         Controls.current.enabled = true;
@@ -747,12 +771,27 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
           lastTimestampMS.current = performance.now();
           handleRenderScene && handleRenderScene();
           if (pathIndex.current < aiRaceResult.current[0].speedData.length) {
-            if (HorseOffsetCamVector3.current.x > 0) {
-              HorseOffsetCamVector3.current.x -= 0.0298 * pathPlaySpeed.current;
-              HorseOffsetCamVector3.current.y -= 0.0083 * pathPlaySpeed.current;
-              HorseOffsetCamVector3.current.z -= 0.0166 * pathPlaySpeed.current;
-              //const HorseOffsetCamVector3 = useRef({ x: 0, y: 3, z: 15 });
-              //const HorseOffsetCamVector3 = useRef({ x: 17.9, y: 6.64, z: 30 });
+            // if (HorseOffsetCamVector3.current.x > 0) {
+            //   HorseOffsetCamVector3.current.x -= 0.0298 * pathPlaySpeed.current;
+            //   HorseOffsetCamVector3.current.y -= 0.0083 * pathPlaySpeed.current;
+            //   HorseOffsetCamVector3.current.z -= 0.0166 * pathPlaySpeed.current;
+            //   //const HorseOffsetCamVector3 = useRef({ x: 0, y: 3, z: 15 });
+            //   //const HorseOffsetCamVector3 = useRef({ x: 17.9, y: 6.64, z: 30 });
+            // }
+            const hRBeginV3Cam = HRaceBeginOffsetCamVector3.current.camOffset;
+            const hRBeginV3Tar = HRaceBeginOffsetCamVector3.current.targetOffset;
+            const hRBeginV3CamOri = HRaceBeginOffsetCamVector3.current.camOffsetOri;
+            const hRBeginV3TarOri = HRaceBeginOffsetCamVector3.current.targetOffsetOri;
+            if (hRBeginV3Cam.x > 0) {
+              // hRBeginV3Cam.x -= (Math.round((hRBeginV3CamOri.x / 5 / 40) * 10000) / 10000) * pathPlaySpeed.current;
+              // hRBeginV3Cam.y -= (Math.round((hRBeginV3CamOri.y / 5 / 40) * 10000) / 10000) * pathPlaySpeed.current;
+              // hRBeginV3Cam.z += (Math.round((hRBeginV3CamOri.z / 5 / 40) * 10000) / 10000) * pathPlaySpeed.current;
+              // hRBeginV3Tar.z -= (Math.round((hRBeginV3TarOri.z / 5 / 40) * 10000) / 10000) * pathPlaySpeed.current;
+              hRBeginV3Cam.x -= parseFloat((hRBeginV3CamOri.x / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
+              hRBeginV3Cam.y -= parseFloat((hRBeginV3CamOri.y / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
+              hRBeginV3Cam.z -= parseFloat((hRBeginV3CamOri.z / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
+              hRBeginV3Tar.z -= parseFloat((hRBeginV3TarOri.z / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
+              //console.log('HRaceBeginOffsetCamVector3:', JSON.stringify(HRaceBeginOffsetCamVector3.current));
             }
 
             for (let index = 0; index < HNumberModelMap.size; index++) {
@@ -774,6 +813,11 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
                 if (pathPlaySpeed.current !== 1) {
                   numModel.rotation.y = -Math.PI / 2 + path.r;
                 }
+                // if (path.isZero && index === 0) {
+                //   path.t % 12 === 0 && SoundArenaUtil.skillsWhip.sound.play();
+                //   path.t % 30 === 0 && SoundArenaUtil.skillsOvertake.sound.play();
+                // }
+
                 const hnbModel = HNumberBoardModelMap.get(raceRes.trackNumber + '');
                 if (hnbModel) {
                   hnbModel.rotation.y = -(-Math.PI / 2 + path.r);
@@ -854,7 +898,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     Controls.current = new OrbitControls(ActiveCamera.current, Render.current.domElement);
     Controls.current.enabled = false;
     // Controls.current.addEventListener('change', () => {
-    //   console.log('Camera position:', ActiveCamera.current.position);
+    //   console.log('Camera position:', ActiveCamera.current.position, Controls.current.target);
     //   //renderScene();
     // });
 
@@ -914,8 +958,8 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     createSkydomeHdr();
     loaderGlgModelAnimations();
     loaderGlgRaceArena();
-
     loaderCreateRacePath();
+    SoundArenaUtil.init(loadManager);
     setView();
 
     if (Controls.current) {
@@ -925,7 +969,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       Controls.current.maxPolarAngle = Math.PI / 2;
       Controls.current.minPolarAngle = Math.PI / 4;
       Controls.current.maxDistance = 100;
-      Controls.current.minDistance = 10;
+      Controls.current.minDistance = 4;
       Controls.current.update();
     }
     window.addEventListener('resize', setView);
@@ -954,6 +998,8 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
         loadingShow();
         handleHorseMansRunAction();
         renderScene();
+        SoundArenaUtil.throughoutCrowdEnvSoundLoop.sound.play();
+        SoundArenaUtil.throughoutWindSoundLoop.sound.play();
       }, 100);
     }
   }, [loaded]);
@@ -1024,8 +1070,23 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
             });
             handleRaceStart && handleRaceStart(pathPlaySpeed.current);
             //handleRacePlaySpeed && handleRacePlaySpeed(pathPlaySpeed.current);
+            SoundArenaUtil.throughoutCrowdEnvSoundLoop.sound.play();
+            SoundArenaUtil.throughoutWindSoundLoop.sound.play();
+            // SoundArenaUtil.countdownReady.sound.play();
+            // SoundArenaUtil.countdownReady.sound.on('end', () => {
+            //   SoundArenaUtil.countdownGo.sound.play();
+            // });
           }}>
           Run
+        </button>
+        <button
+          className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
+          onClick={() => {
+            racePathPlay.current = false;
+            // SoundArenaUtil.crossingFinishLine?.sound?.play();
+            // SoundArenaUtil.crowdCheersFinished?.sound?.play();
+          }}>
+          Pause
         </button>
         <button
           className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
@@ -1043,6 +1104,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
                 onClick={() => {
                   lookAtTrackNumber.current = num;
                   pathTerminusCamVector3.isUse = false;
+                  //SoundArenaUtil.skillsOvertake.sound.play();
                 }}>
                 Horse {num}
               </button>
@@ -1073,8 +1135,16 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
               Controls.current.target.copy(targetVector3);
               Controls.current.update();
             }
+            //SoundArenaUtil.crowdCheersFinishAfter.sound.play();
           }}>
           Terminus
+        </button>
+        <button
+          className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
+          onClick={() => {
+            HorseOffsetCamVector3.current = HorseUserOffsetCamVector3.current;
+          }}>
+          User Horse
         </button>
       </div>
       <div className=' flex items-center justify-center overflow-hidden' ref={RenderBody}></div>
