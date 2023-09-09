@@ -47,11 +47,18 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const HorseRaceArenaModelObj = useRef(null);
   const HorseManRunModelObjs = useRef([]).current;
   const HorseManRunMixerMap = useRef<Map<string, THREE.AnimationMixer[]>>(new Map()).current; //key为：动画1 动画2 动画3
+  const HorseManRunMixerHCodeMap = useRef<Map<string, Map<string, THREE.AnimationMixer>>>(new Map()).current; //key为：马的赛道编号
   const HorseManRunActionMap = useRef<Map<string, THREE.AnimationAction[]>>(new Map()).current; //key为：动画1 动画2 动画3
   const HorseManBaseAnimationMap = useRef<Map<string, THREE.AnimationClip[]>>(new Map()).current;
   const HAnimationTimeScale = useRef(null); //模型动画播放速度的倍数   //150fps及以上为 0.4
 
+  const lookAtTrackNumber = useRef(-1);
   const HorseManCurrentAnimationType = useRef(AnimationType.Stand);
+  const CurrentLookAtAnimationType = useRef({
+    hCode: lookAtTrackNumber.current + '',
+    animType: AnimationType.Stand,
+    prevAnimType: AnimationType.Stand,
+  });
 
   const HNumberModelMap = useRef<Map<string, THREE.Object3D>>(new Map()).current;
   const HNumberBoardModelMap = useRef<Map<string, THREE.Object3D>>(new Map()).current;
@@ -66,7 +73,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const racePathPlay = useRef(false);
   const pathPlaySpeed = useRef(1); //曲线播放速度 //1 1倍速，2 2倍速,...
   const hNumberBoardGeo = useRef<THREE.CircleGeometry>(null);
-  const lookAtTrackNumber = useRef(-1);
+
   const SpotLightModel = useRef<THREE.SpotLight>(null);
   const pathTerminusCamVector3 = useRef({
     isUse: false,
@@ -121,8 +128,11 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_sprint_v0.3.glb';
   const horseManAnimRunModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_run_v0.4.glb';
+  const horseManAnimWhiplashModel =
+    config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_whiplash_v0.1.glb';
   const horseManAnimStandModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_man/horse_man_animation_stand_v0.3.glb';
+
   //const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.16.glb';
   //https://omh-game-ui-assets.s3.ap-east-1.amazonaws.com/omh-game/models/model/202309/06/horse_race_arena_santa_v0.1/arena_1.glb
   const horseRaceArenaModelPath = config.fileHost3d + '/omh-game/models/model/202309/06/horse_race_arena_santa_v0.3/'; //arena_1.glb
@@ -347,6 +357,11 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       //console.log('horseManAnimSprintModel obj :', obj);
       HorseManBaseAnimationMap.set(AnimationType.Sprint, obj.animations);
     });
+    loader.load(horseManAnimWhiplashModel, (obj) => {
+      //console.log('horseManAnimSprintModel obj :', obj);
+      HorseManBaseAnimationMap.set(AnimationType.Whiplash, obj.animations);
+    });
+
     // let obj = await loader.loadAsync(horseManAnimStandModel);
     // HorseManBaseAnimationMap.set(AnimationType.Stand, obj.animations);
     // obj = await loader.loadAsync(horseManAnimRunModel);
@@ -525,14 +540,25 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
 
   //#region  handle functions
 
+  const handleSelectHorseChange = (e) => {
+    //console.log('handleSelectChange e:', e);
+    lookAtTrackNumber.current = parseInt(e.target.value);
+    pathTerminusCamVector3.isUse = false;
+
+    CurrentLookAtAnimationType.current.hCode = e.target.value;
+    CurrentLookAtAnimationType.current.animType = HorseManCurrentAnimationType.current;
+
+    //SoundArenaUtil.skillsOvertake.sound.play();
+  };
+
   const handleSelectChange = (e) => {
     //console.log('handleSelectChange e:', e);
     setSelectSpeed(e.target.value);
   };
-  const handleHAnimationSelectChange = (e) => {
+  const handleHAnimScaleSelectChange = (e) => {
     //console.log('handleSelectChange e:', e);
     HAnimationTimeScale.current = parseFloat(e.target.value);
-    console.log('handleHAnimationSelectChange actTimeScale:', HAnimationTimeScale.current);
+    console.log('handleHAnimScaleSelectChange actTimeScale:', HAnimationTimeScale.current);
     HorseManRunActionMap.forEach((val) => {
       val.forEach((actionHorseRun) => {
         actionHorseRun.timeScale = HAnimationTimeScale.current; // 0.4;
@@ -616,11 +642,22 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
           const cModel = obj.scene;
           const mixerLeftHorse = new THREE.AnimationMixer(cModel);
           const actionHorseRun = mixerLeftHorse.clipAction(cAnimations[0]);
+          // if (ckey === AnimationType.Whiplash) {
+          //   actionHorseRun.loop = THREE.LoopOnce;
+          // } else actionHorseRun.loop = THREE.LoopRepeat;
           actionHorseRun.loop = THREE.LoopRepeat;
-          //actionHorseRun.setDuration(actDuration);
           actionHorseRun.timeScale = 0.4;
           actionHorseRun.time = Math.random() * 2;
+          if (ckey === AnimationType.Whiplash) {
+            actionHorseRun.time = 0;
+          }
           actionHorseRun.play();
+          // mixerLeftHorse.addEventListener('loop', (e) => {
+          //   console.log('mixerLeftHorse loop ' + ckey + ' ' + cModel.name, e);
+          // });
+          // mixerLeftHorse.addEventListener('finished', (e) => {
+          //   console.log('mixerLeftHorse finished ' + ckey + ' ' + cModel.name, e);
+          // });
           horseManRunActions.push(actionHorseRun);
           horseManRunMixers.push(mixerLeftHorse);
         });
@@ -628,6 +665,56 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
         HorseManRunActionMap.set(ckey, horseManRunActions);
       }
     });
+
+    HorseManRunMixerMap.forEach((cMixers, ckey) => {
+      cMixers.forEach((mixer, idx) => {
+        const hCode = HModelTrackNumbers[idx] + '';
+        if (HorseManRunMixerHCodeMap.has(hCode)) {
+          HorseManRunMixerHCodeMap.get(hCode).set(ckey, mixer);
+        } else {
+          const cMap: Map<string, THREE.AnimationMixer> = new Map();
+          cMap.set(ckey, mixer);
+          HorseManRunMixerHCodeMap.set(hCode, cMap);
+        }
+      });
+    });
+    //console.log('HorseManRunMixerHCodeMap:', HorseManRunMixerHCodeMap);
+  };
+
+  const handleSwitchAnimation = (newAnimType: AnimationType, onFinished: any) => {
+    //console.log('handleSwitchAnimation newAnimType:', newAnimType);
+    //const currentMixer = HorseManRunMixerMap.get(HorseManCurrentAnimationType.current)[horseIdx];
+    //const currentMixers = HorseManRunMixerMap.get(HorseManCurrentAnimationType.current);
+
+    CurrentLookAtAnimationType.current.hCode = lookAtTrackNumber.current + '';
+    const currentMixer = HorseManRunMixerHCodeMap.get(CurrentLookAtAnimationType.current.hCode)?.get(
+      CurrentLookAtAnimationType.current.animType
+    );
+    function switchAction() {
+      CurrentLookAtAnimationType.current.animType = newAnimType;
+      onFinished && onFinished();
+      currentMixer.removeEventListener('loop', switchAction);
+    }
+    currentMixer?.addEventListener('loop', switchAction);
+
+    // let cCount = 0;
+    // function switchAction() {
+    //   cCount++;
+    //   //console.log('switchAction cCount:', cCount, currentMixers.length);
+    //   if (cCount === currentMixers.length) {
+    //     HorseManCurrentAnimationType.current = newAnimType;
+    //     onFinished && onFinished();
+    //     removeEvent();
+    //   }
+    // }
+    // function removeEvent() {
+    //   currentMixers.forEach((currentMixer) => {
+    //     currentMixer.removeEventListener('loop', switchAction);
+    //   });
+    // }
+    // currentMixers.forEach((currentMixer) => {
+    //   currentMixer.addEventListener('loop', switchAction);
+    // });
   };
 
   const lastActTimeScaleRef = useRef(0.5);
@@ -760,9 +847,15 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       // }
     }
 
-    HorseManRunMixerMap.get(HorseManCurrentAnimationType.current)?.forEach((item) => {
-      item.update(0.02);
+    // HorseManRunMixerMap.get(HorseManCurrentAnimationType.current)?.forEach((item) => {
+    //   item.update(0.02);
+    // });
+    HorseManRunMixerHCodeMap?.forEach((mixerMap, hCode) => {
+      if (CurrentLookAtAnimationType.current.hCode === hCode) {
+        mixerMap.get(CurrentLookAtAnimationType.current.animType)?.update(0.02);
+      } else mixerMap.get(HorseManCurrentAnimationType.current)?.update(0.02);
     });
+
     if (HNumberModelMap.size > 0) {
       //pathCount.current < 1 只跑一圈
       if (pathCount.current < 1 && racePathPlay.current) {
@@ -846,6 +939,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
         }
       } else {
         HorseManCurrentAnimationType.current = AnimationType.Stand;
+        CurrentLookAtAnimationType.current.animType = AnimationType.Stand;
       }
     }
     Render.current.render(Scene.current, ActiveCamera.current);
@@ -1035,7 +1129,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
         <select
           placeholder='马动画倍速'
           defaultValue='0.5'
-          onChange={handleHAnimationSelectChange}
+          onChange={handleHAnimScaleSelectChange}
           className=' mx-2 my-1 w-16 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'>
           <option value='0.4'>0.4</option>
           <option value='0.5'>0.5</option>
@@ -1060,6 +1154,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
             pathTerminusCamVector3.isUse = false;
             racePathPlay.current = true;
             HorseManCurrentAnimationType.current = AnimationType.Run;
+            CurrentLookAtAnimationType.current.animType = AnimationType.Run;
             pathCount.current = 0;
             HorseRaceArenaModelObj.current.traverse((child: THREE.Mesh) => {
               if (child.isObject3D) {
@@ -1091,11 +1186,46 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
         <button
           className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
           onClick={() => {
-            HorseManCurrentAnimationType.current = AnimationType.Sprint;
+            // HorseManCurrentAnimationType.current = AnimationType.Sprint;
+            // setTimeout(() => {
+            //   HorseManCurrentAnimationType.current = AnimationType.Run;
+            // }, 4 * 1000);
+            handleSwitchAnimation(AnimationType.Sprint, () => {
+              console.log('page Sprint onClick  111');
+              setTimeout(() => {
+                handleSwitchAnimation(AnimationType.Run, () => {
+                  console.log('page Sprint onClick  222');
+                  CurrentLookAtAnimationType.current.hCode = '';
+                });
+              }, 5 * 1000);
+            });
           }}>
           Sprint
         </button>
-        {HModelTrackNumbers.length > 0 &&
+        <button
+          className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
+          onClick={() => {
+            CurrentLookAtAnimationType.current.prevAnimType = CurrentLookAtAnimationType.current.animType;
+            handleSwitchAnimation(AnimationType.Whiplash, () => {
+              console.log('page Whiplash onClick  111');
+              handleSwitchAnimation(CurrentLookAtAnimationType.current.prevAnimType, () => {
+                console.log('page Whiplash onClick  222');
+                //CurrentLookAtAnimationType.current.hCode = '';
+              });
+            });
+            //HorseManCurrentAnimationType.current = AnimationType.Whiplash;
+            // setTimeout(() => {
+            //   handleSwitchAnimation(AnimationType.Run, 0);
+            // }, 1000);
+
+            //HorseManCurrentAnimationType.current = AnimationType.Whiplash;
+            // setTimeout(() => {
+            //   HorseManCurrentAnimationType.current = AnimationType.Run;
+            // }, 1 * 1000);
+          }}>
+          Whiplash
+        </button>
+        {/* {HModelTrackNumbers.length > 0 &&
           HModelTrackNumbers.map((num, idx) => {
             return (
               <button
@@ -1109,12 +1239,28 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
                 Horse {num}
               </button>
             );
-          })}
-        <button
+          })} */}
+        {/* <button
           className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
           onClick={() => (lookAtTrackNumber.current = -1)}>
           Horse Ranking 1
-        </button>
+        </button> */}
+
+        <select
+          placeholder='Switch Horse'
+          onChange={handleSelectHorseChange}
+          className=' mx-2 my-1 w-44 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'>
+          <option value='-1'>Horse Ranking 1</option>
+          {HModelTrackNumbers.length > 0 &&
+            HModelTrackNumbers.map((num, idx) => {
+              return (
+                <option key={idx} value={num + ''}>
+                  Horse {num}
+                </option>
+              );
+            })}
+        </select>
+
         <button
           className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
           onClick={() => {
@@ -1139,6 +1285,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
           }}>
           Terminus
         </button>
+
         <button
           className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
           onClick={() => {

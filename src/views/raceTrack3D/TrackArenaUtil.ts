@@ -17,6 +17,7 @@ export enum AnimationType {
   Stand = 'stand',
   Run = 'run',
   Sprint = 'sprint',
+  Whiplash = 'whiplash',
 }
 
 export const getTextureByNumber = (hNumber) => {
