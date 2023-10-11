@@ -21,8 +21,8 @@ export enum SoundNameType {
   crowdCheersBeyond = 'crowdCheersBeyond',
   crowdCheersFinish = 'crowdCheersFinish',
   crowdCheersFinished = 'crowdCheersFinished',
-  crowdCheersFinishAfter = 'crowdCheersFinishAfter',
   crowdCheersFinishNear = 'crowdCheersFinishNear',
+  crowdCheersFinishNearLine = 'crowdCheersFinishNearLine',
   hoovesFewLoop = 'hoovesFewLoop',
   hoovesGroupLoop = 'hoovesGroupLoop',
   hoovesSingleLoop = 'hoovesSingleLoop',
@@ -53,12 +53,12 @@ class TrackArenaSoundUtil {
     { name: 'countdown3', fileName: 'countdown_3.mp3', sound: null, loop: false },
     { name: 'countdownGo', fileName: 'countdown_go.mp3', sound: null, loop: false },
     { name: 'countdownReady', fileName: 'countdown_ready.mp3', sound: null, loop: false },
-    { name: 'crossingFinishLine ', fileName: 'crossing_finish_line .mp3', sound: null, loop: false },
+    { name: 'crossingFinishLine', fileName: 'crossing_finish_line.mp3', sound: null, loop: false },
     { name: 'crowdCheersBeyond', fileName: 'crowd_cheers_beyond.mp3', sound: null, loop: false },
     { name: 'crowdCheersFinish', fileName: 'crowd_cheers_finish.mp3', sound: null, loop: false },
     { name: 'crowdCheersFinished', fileName: 'crowd_cheers_finished.mp3', sound: null, loop: false },
-    { name: 'crowdCheersFinishAfter', fileName: 'crowd_cheers_finish_after.mp3', sound: null, loop: false },
     { name: 'crowdCheersFinishNear', fileName: 'crowd_cheers_finish_near.mp3', sound: null, loop: false },
+    { name: 'crowdCheersFinishNearLine', fileName: 'crowd_cheers_finish_near_line.mp3', sound: null, loop: false },
     { name: 'hoovesFewLoop', fileName: 'hooves_few_loop.mp3', sound: null, loop: true },
     { name: 'hoovesGroupLoop', fileName: 'hooves_group_loop.mp3', sound: null, loop: true },
     { name: 'hoovesSingleLoop', fileName: 'hooves_single_loop.mp3', sound: null, loop: true },
@@ -89,9 +89,9 @@ class TrackArenaSoundUtil {
   /** 观众欢呼-冲过终点线后 */
   public crowdCheersFinished: SoundPlayer = null;
   /** 观众欢呼-临近终点 */
-  public crowdCheersFinishAfter: SoundPlayer = null;
-  /** 观众掌声-即将冲线 */
   public crowdCheersFinishNear: SoundPlayer = null;
+  /** 观众掌声-即将冲线 */
+  public crowdCheersFinishNearLine: SoundPlayer = null;
   /** 马蹄声-少量马-循环 */
   public hoovesFewLoop: SoundPlayer = null;
   public hoovesGroupLoop: SoundPlayer = null;
@@ -168,11 +168,11 @@ class TrackArenaSoundUtil {
         case SoundNameType.crowdCheersFinished:
           this.crowdCheersFinished = sPlayer;
           break;
-        case SoundNameType.crowdCheersFinishAfter:
-          this.crowdCheersFinishAfter = sPlayer;
-          break;
         case SoundNameType.crowdCheersFinishNear:
           this.crowdCheersFinishNear = sPlayer;
+          break;
+        case SoundNameType.crowdCheersFinishNearLine:
+          this.crowdCheersFinishNearLine = sPlayer;
           break;
         case SoundNameType.hoovesFewLoop:
           this.hoovesFewLoop = sPlayer;
@@ -240,7 +240,7 @@ class TrackArenaSoundUtil {
       }
     });
     sound.on('play', () => {
-      //console.log('initSound play:', soundPlayer);
+      console.log('initSound play:', soundPlayer);
       soundPlayer.audioStatus = 'play';
     });
     sound.on('seek', () => {
@@ -260,6 +260,61 @@ class TrackArenaSoundUtil {
   }
   getSoundPlayer(soundName: SoundNameType) {
     return this.soundPlayerMap.get(soundName);
+  }
+  stopAllSound() {
+    this.soundPlayerList.forEach((sPlayer) => {
+      sPlayer?.sound?.stop();
+    });
+  }
+  /** 开始倒计时 */
+  playCountdownGoSound() {
+    this.countdownGo?.sound?.play();
+    this.countdownGo?.sound?.on('end', () => {
+      this.startGameRingtone?.sound?.play();
+      this.startGameRingtone?.sound?.on('end', () => {
+        this.hoovesGroupLoop?.sound?.play();
+        const cDelay = Math.round(Math.random() * (18 - 12) + 12);
+        setTimeout(() => {
+          this.hoovesGroupLoop?.sound?.stop();
+          this.hoovesFewLoop?.sound?.play();
+        }, cDelay * 1000);
+      });
+    });
+  }
+  /** 全场环境音效 */
+  playThroughoutCrowdEnvSound() {
+    this.throughoutCrowdEnvSoundLoop?.sound?.play();
+    this.throughoutWindSoundLoop?.sound?.play();
+    let cDelay = Math.round(Math.random() * (10 - 5) + 5);
+    function setRdmVolume() {
+      const cVolu = Math.random() * (1 - 0.3) + 0.3;
+      this.throughoutCrowdEnvSoundLoop?.sound?.volume(cVolu);
+      this.throughoutWindSoundLoop?.sound?.volume(cVolu);
+      cDelay = Math.round(Math.random() * (10 - 5) + 5);
+      setTimeout(setRdmVolume, cDelay * 1000);
+    }
+    setTimeout(setRdmVolume, cDelay * 1000);
+  }
+  /** 即将冲线欢呼声 */
+  playCrowdCheersFinishSound() {
+    this.crowdCheersFinishNear?.sound?.play();
+    setTimeout(() => {
+      //this.crowdCheersFinishNear?.sound?.fade(1, 0, 0.3);
+      this.crowdCheersFinishNearLine?.sound?.play();
+      setTimeout(() => {
+        //this.crowdCheersFinishNearLine?.sound?.fade(1, 0, 0.3);
+        this.crossingFinishLine?.sound?.play();
+        console.log(' this.crossingFinishLine', this.crossingFinishLine);
+        this.crowdCheersFinish?.sound?.play();
+        setTimeout(() => {
+          //this.crowdCheersFinish?.sound?.fade(1, 0, 0.3);
+          this.crowdCheersFinished?.sound?.play();
+          //过线后结束马蹄声
+          this.hoovesGroupLoop?.sound?.stop();
+          this.hoovesFewLoop?.sound?.stop();
+        }, 500);
+      }, 500);
+    }, 2000);
   }
 }
 

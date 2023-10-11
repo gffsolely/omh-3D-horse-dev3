@@ -18,6 +18,7 @@ export enum AnimationType {
   Run = 'run',
   Sprint = 'sprint',
   Whiplash = 'whiplash',
+  ShakeHead = 'shakeHead',
 }
 
 export const getTextureByNumber = (hNumber) => {
@@ -75,6 +76,22 @@ export const getFontTextByNumber = (loadManager, hNumber) => {
     })
   );
   return hNumMesh;
+};
+
+export const getUserConeMeshByNumber = (hNumber) => {
+  const hConeGroup = new THREE.Group();
+  const geometry = new THREE.ConeGeometry(0.12, 0.26, 6);
+  const cColor = getTrackColor(hNumber);
+  const hConeMesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: cColor, flatShading: true }));
+  hConeMesh.receiveShadow = true;
+  const hWireframe = new THREE.LineSegments(
+    new THREE.WireframeGeometry(geometry),
+    new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 0.2, opacity: 0.6, transparent: true })
+  );
+  hConeGroup.add(hConeMesh);
+  hConeGroup.add(hWireframe);
+  hConeGroup.rotation.x = Math.PI;
+  return hConeGroup;
 };
 
 export const getFps = (loadManager) => {
@@ -137,6 +154,7 @@ export const loadingHide = (onComplete = null) => {
   });
 };
 export const loadingShow = (onComplete = null) => {
+  //console.log('loadingShow', Date.now());
   const ease = 'power4.inOut';
   gsap.to('.mg-door-text', {
     opacity: 0,
@@ -232,7 +250,7 @@ export default class TrackArenaUtil {
         resHorsePaths.push({
           gameHorseId: chorse.gameHorseId,
           ranking: chorse.ranking,
-          trackNumber: chorse.trackNumber,
+          trackNumber: chorse.trackNumber + '',
           speedData: [],
         });
         let isSkip = true;

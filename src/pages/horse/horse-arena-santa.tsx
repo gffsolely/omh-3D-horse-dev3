@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import LiveSantaTrackPreview from '@/views/raceTrack2D/LiveSantaTrackPreviewV3';
+import LiveSantaTrackPreview from '@/views/raceTrack2D/LiveSantaTrackPreviewTmp';
 import TrackSantaArenaModel from '@/views/raceTrack3D/TrackSantaArenaModel';
 
 import reacPathAI from '~/models/json/rece-7horse-audio.json';

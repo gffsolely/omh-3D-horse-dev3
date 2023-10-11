@@ -119,6 +119,15 @@ export default function HorseModel() {
     BodyViewSize.h = useH;
     setBodyViewWH({ w: useW, h: useH });
   };
+
+  const handleExport = () => {
+    const msgTxtSz = ['提取需求中的内容，并能制作对应的数据表格', '叶朵朵等烦了。| |14|物品|旁白|黑色蕾丝裙的小肩'];
+    const link = document.createElement('a');
+    link.download = 'aaajson-file.jsonl';
+    link.href = 'data:text/plain,' + msgTxtSz.join('\n');
+    link.click();
+  };
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -148,6 +157,9 @@ export default function HorseModel() {
     <div className=' h-full w-full bg-black'>
       {isMounted && (
         <div className=' relative mx-auto pt-20 ' style={{ width: bodyViewWH.w, height: bodyViewWH.h }}>
+          <button className=' text-lg  text-white ' onClick={handleExport}>
+            导出
+          </button>
           <div className=' mx-auto  w-3/4 border border-[#FFFFFF33] bg-[#00000099]  py-2 text-white'>
             <ul role='list' className='h-full w-full'>
               <li className='flex justify-start px-4  py-6 transition '>
