@@ -36,6 +36,16 @@ export default function IndexPage() {
           horse Page
           <div>
             see:
+            <Link href='/horse/horse-arena-santa-god' className=' text-blue-500 '>
+              horse-arena-santa-god(新赛场模型 AI 全景贴图 导播)
+            </Link>
+          </div>
+        </div>
+
+        <div className=' ml-auto  mr-auto w-1/2 pt-4 text-center text-white'>
+          horse Page
+          <div>
+            see:
             <Link href='/horse/horse-arena-santa-ws' className=' text-blue-500 '>
               horse-arena-santa-ws(赛场模型 AI WS 实时比赛)
             </Link>

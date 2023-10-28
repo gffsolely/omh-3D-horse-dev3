@@ -16,9 +16,14 @@ export enum HorseEquipType {
 export enum AnimationType {
   Stand = 'stand',
   Run = 'run',
-  Sprint = 'sprint',
+  /**冲刺 */
+  Sprint = 'sprint', //冲刺
+  /** 挥鞭 */
   Whiplash = 'whiplash',
-  ShakeHead = 'shakeHead',
+  /**突围 */
+  Overtake = 'Overtake', //突围
+  /** 减速（拉绳） */
+  Hold = 'hold',
 }
 
 export const getTextureByNumber = (hNumber) => {

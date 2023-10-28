@@ -11,7 +11,6 @@ import { isPc } from '@/utils';
 import SoundArenaUtil from './TrackArenaSoundUtil';
 import TrackArenaUtil, {
   AnimationType,
-  getFontTextByNumber,
   getTextureByNumber,
   getUserConeMeshByNumber,
   getVideoTexture,
@@ -21,6 +20,7 @@ import TrackArenaUtil, {
 } from './TrackArenaUtil';
 
 function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene }, ref) {
+  //#region useRef useState
   // handleRacePlaySpeed, handleRaceData
   // console.log('TrackSantaArenaModel init:', Date.now());
   const LoadingTimes = useRef(performance.now());
@@ -83,33 +83,9 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const SpotLightModel = useRef<THREE.SpotLight>(null);
   const pathTerminusCamVector3 = useRef({
     isUse: false,
-    // targetPos: { x: -165.59, y: 1, z: -120 },
-    // camPos: { x: -165.92, y: 6.97, z: -98.85 },
     targetPos: { x: -167.41, y: 4.28, z: -121.14 },
     camPos: { x: -167.396, y: 10.976, z: -101 },
   }).current;
-
-  /*
-
-"id": 7,
-			"name": "Santa Anita 7f",
-			"totalTracks": 16,
-			"trackWidthEach": 1.5,
-			"trackLength": 1408.176,
-			"perimeter": 1609.34,
-			"createAt": "07-06-2023 11:40:51",
-			"supportedCurves": "1400",
-			"unit": "Imperial",
-			"startX": 437.915726,
-			"startY": 119,
-			"startZ": 0,
-			"endX": 165.59,
-			"endY": -119,
-			"endZ": 0,
-			"extension": 224,
-			"startAngle": 3.14159,
-
-*/
 
   const TrackArenaUtilInstance = useRef<TrackArenaUtil>(null);
 
@@ -124,31 +100,31 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const RaceAudioRef = useRef(null);
   const [raceAudioText, setRaceAudioText] = useState('');
 
+  //#endregion
+
   //#region fileHost3d
   const scene360Hdr = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien_4K.hdr';
   const sceneEnvHdrJpg = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien_tocation_1.jpg';
   //const sceneEnvHdr = config.fileHost3d + '/omh-game/models/hdr/202308/08/HDR_Alien1080.hdr';
   const horseManBaseModel =
     config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_base_model_v0.1.glb';
-  const horseManAnimRun2SprintModel =
-    config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_run2sprint_v0.2.glb';
-  const horseManAnimRun2OvertakeModel =
-    config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_run2overtake_v0.2.glb';
-  const horseManAnimRun2HoldModel =
-    config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_run2hold_v0.2.glb';
+  const horseManAnimSprintModel =
+    config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_sprint_v0.2.glb';
+  const horseManAnimSprintFastModel =
+    config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_fast_v0.1.glb';
   const horseManAnimRunModel =
     config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_run_v0.1.glb';
   const horseManAnimWhiplashModel =
     config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_whiplash_v0.1.glb';
   const horseManAnimStandModel =
     config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_stand_v0.2.glb';
+  const horseManAnimShakeHeadModel =
+    config.fileHost3d + '/omh-game/models/model/202309/06/horse_man/horse_man_animation_shakehead_v0.1.glb';
 
-  //const horseRaceArenaModel = config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_santa_v0.16.glb';
-  //https://omh-game-ui-assets.s3.ap-east-1.amazonaws.com/omh-game/models/model/202309/06/horse_race_arena_santa_v0.1/arena_1.glb
-  const horseRaceArenaModelPath = config.fileHost3d + '/omh-game/models/model/202309/06/horse_race_arena_santa_v0.12/'; //arena_1.glb
+  const horseRaceArenaModelPath = config.fileHost3d + '/omh-game/models/model/202309/06/horse_race_arena_santa_v0.5/'; //arena_1.glb
   const horseRaceArenaPlacardModel =
     config.fileHost3d + '/omh-game/models/model/202308/05/horse_race_arena_placard_v0.2.glb';
-  const horseArenaPlacardVideo = config.fileHost3d + '/omh-game/models/videos/202310/16/advideo_v1.0.mp4';
+  const horseArenaPlacardVideo = config.fileHost3d + '/omh-game/models/videos/202308/05/ad01851030711.mp4';
 
   const horseEquipRein_R =
     config.fileHost3d + '/omh-game/3DAssets/EquipmentTexture/S1/DefaultHorse/Reins/Skin/1_Base_color.png';
@@ -203,21 +179,525 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     //
   }));
 
+  //#region 导播视角
+
+  // const CameraGodFullView = useRef<THREE.PerspectiveCamera>(); //俯瞰全场
+  // const CameraGodFollowBack = useRef<THREE.PerspectiveCamera>(); //后方跟拍
+  // const CameraGodFollowFront = useRef<THREE.PerspectiveCamera>(); //前方跟拍
+
+  const HAsyncTaskQueueRef = useRef<{ name: string; lastTime: number; run: any }[]>([]).current;
+
+  const CurrentFollowCameraOffset = useRef(null);
+
+  const CamOffsetFullView = useRef({
+    isUse: false,
+    targetPos: { x: -460, y: 1, z: 130 },
+    camPos: { x: -410, y: 3, z: 130 },
+    timelines: [],
+  }).current;
+  const handleGodCamFullView = () => {
+    const tlCamPos = gsap.timeline({ yoyo: true, repeat: -1 });
+    CamOffsetFullView.timelines.push(tlCamPos);
+    // 镜头1
+    tlCamPos.to(CamOffsetFullView.camPos, {
+      x: -380,
+      y: 10,
+      z: 150,
+      duration: 3,
+      ease: 'none',
+      onUpdate: () => {
+        const pos = CamOffsetFullView.camPos;
+        ActiveCamera.current.position.set(pos.x, pos.y, pos.z);
+      },
+      onComplete: () => {
+        //镜头2 的起点
+        CamOffsetFullView.camPos.x = -50;
+        CamOffsetFullView.camPos.y = 100;
+        CamOffsetFullView.camPos.z = 200;
+        // const posLog = { x: CamOffsetFullView.camPos.x, y: CamOffsetFullView.camPos.y, z: CamOffsetFullView.camPos.z };
+        // console.log('镜头1 终点：', JSON.stringify(posLog));
+      },
+    });
+    // 镜头2
+    tlCamPos.to(CamOffsetFullView.camPos, {
+      x: 150,
+      y: 50,
+      z: 150,
+      duration: 8,
+      ease: 'none',
+      onUpdate: () => {
+        const pos = CamOffsetFullView.camPos;
+        ActiveCamera.current.position.set(pos.x, pos.y, pos.z);
+        //const posLog = { x: pos.x, y: pos.y, z: pos.z };
+        //console.log('镜头2 onUpdate：', JSON.stringify(posLog), JSON.stringify(ActiveCamera.current.position));
+      },
+      onComplete: () => {
+        //镜头3 的起点
+        CamOffsetFullView.camPos.x = -50;
+      },
+    });
+    // 镜头3
+    tlCamPos.to(CamOffsetFullView.camPos, {
+      x: 0,
+      y: 40,
+      z: 130,
+      duration: 5,
+      ease: 'none',
+      onUpdate: () => {
+        const pos = CamOffsetFullView.camPos;
+        ActiveCamera.current.position.set(pos.x, pos.y, pos.z);
+      },
+    });
+    tlCamPos.play();
+
+    const tlCamTarget = gsap.timeline({ yoyo: true, repeat: -1 });
+    CamOffsetFullView.timelines.push(tlCamTarget);
+    //目标位置  镜头1
+    tlCamTarget.to(CamOffsetFullView.targetPos, {
+      x: -430,
+      z: 130,
+      duration: 3,
+      ease: 'none',
+      onUpdate: () => {
+        const tx = CamOffsetFullView.targetPos.x;
+        const tz = CamOffsetFullView.targetPos.z;
+        Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+        Controls.current.update();
+      },
+      onComplete: () => {
+        CamOffsetFullView.targetPos.x = -150;
+        CamOffsetFullView.targetPos.z = -20;
+      },
+    });
+    //目标位置  镜头2
+    tlCamTarget.to(CamOffsetFullView.targetPos, {
+      x: -50,
+      z: 20,
+      duration: 8,
+      ease: 'none',
+      onUpdate: () => {
+        const tx = CamOffsetFullView.targetPos.x;
+        const tz = CamOffsetFullView.targetPos.z;
+        Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+        Controls.current.update();
+      },
+      onComplete: () => {
+        CamOffsetFullView.targetPos.x = 100;
+        CamOffsetFullView.targetPos.z = -10;
+      },
+    });
+    //目标位置  镜头3
+    tlCamTarget.to(CamOffsetFullView.targetPos, {
+      x: 300,
+      z: -20,
+      duration: 5,
+      ease: 'none',
+      onUpdate: () => {
+        const tx = CamOffsetFullView.targetPos.x;
+        const tz = CamOffsetFullView.targetPos.z;
+        Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+        Controls.current.update();
+      },
+    });
+    tlCamTarget.play();
+
+    // const tlCamTarget = gsap.timeline();
+    // CamOffsetFullView.timelines.push(tlCamTarget);
+    // tlCamTarget.to(CamOffsetFullView.targetPos, {
+    //   x: -300,
+    //   z: 110,
+    //   duration: 10,
+    //   ease: 'none',
+    //   onUpdate: () => {
+    //     const tx = CamOffsetFullView.targetPos.x;
+    //     const tz = CamOffsetFullView.targetPos.z;
+    //     console.log('tl 1 pos:', {
+    //       tcamPos: JSON.stringify({ tx, ty: CamOffsetFullView.targetPos.y, tz }),
+    //       camPos: JSON.stringify({
+    //         x: CamOffsetFullView.camPos.x,
+    //         y: CamOffsetFullView.camPos.y,
+    //         z: CamOffsetFullView.camPos.z,
+    //       }),
+    //     });
+    //     Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+    //     Controls.current.update();
+    //   },
+    //   onComplete: () => {
+    //     CamOffsetFullView.targetPos.x = -200;
+    //     CamOffsetFullView.targetPos.z = 10;
+    //   },
+    // });
+    // tlCamTarget.to(CamOffsetFullView.targetPos, {
+    //   x: -100,
+    //   z: 5,
+    //   duration: 15,
+    //   ease: 'none',
+    //   onUpdate: () => {
+    //     const tx = CamOffsetFullView.targetPos.x;
+    //     const tz = CamOffsetFullView.targetPos.z;
+    //     console.log('tl 1 pos:', {
+    //       tcamPos: JSON.stringify({ tx, ty: CamOffsetFullView.targetPos.y, tz }),
+    //       camPos: JSON.stringify({
+    //         x: CamOffsetFullView.camPos.x,
+    //         y: CamOffsetFullView.camPos.y,
+    //         z: CamOffsetFullView.camPos.z,
+    //       }),
+    //     });
+    //     Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+    //     Controls.current.update();
+    //   },
+    //   onComplete: () => {
+    //     // CamOffsetFullView.targetPos.x = -100;
+    //     // CamOffsetFullView.targetPos.z = 10;
+    //   },
+    // });
+    // tlCamTarget.to(CamOffsetFullView.targetPos, {
+    //   x: 100,
+    //   z: 20,
+    //   duration: 10,
+    //   ease: 'none',
+    //   onUpdate: () => {
+    //     const tx = CamOffsetFullView.targetPos.x;
+    //     const tz = CamOffsetFullView.targetPos.z;
+    //     console.log('tl 3 pos', {
+    //       tcamPos: JSON.stringify({ tx, ty: CamOffsetFullView.targetPos.y, tz }),
+    //       camPos: JSON.stringify({
+    //         x: CamOffsetFullView.camPos.x,
+    //         y: CamOffsetFullView.camPos.y,
+    //         z: CamOffsetFullView.camPos.z,
+    //       }),
+    //     });
+    //     Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+    //     Controls.current.update();
+    //   },
+    // });
+    // tlCamTarget.play();
+
+    // const myTween = gsap.to(CamOffsetFullView.camPos, {
+    //   x: 200,
+    //   y: 200,
+    //   z: 150,
+    //   duration: 30,
+    //   ease: 'power2.in',
+    //   onUpdate: () => {
+    //     // const progress = myTween.totalProgress();
+
+    //     const tx = CamOffsetFullView.targetPos.x - (CamOffsetFullView.camPos.x - CamOffsetFullView.camPos.x);
+    //     //const tz = CamOffsetFullView.targetPos.z - (CamOffsetFullView.camPos.z - CamOffsetFullView.camPos.z);
+    //     const tz = 40;
+    //     console.log('onUpdate:', {
+    //       now: Date.now(),
+    //       tcamPos: JSON.stringify({ tx, ty: CamOffsetFullView.targetPos.y, tz }),
+    //       camPos: JSON.stringify({
+    //         x: CameraGodFullView.current.position.x,
+    //         y: CameraGodFullView.current.position.y,
+    //         z: CameraGodFullView.current.position.z,
+    //       }),
+    //     });
+
+    //     // console.log('onUpdate:', { now: Date.now(), tarPos: JSON.stringify(CamOffsetFullView.targetPos) });
+    //     CameraGodFullView.current.lookAt(tx, CamOffsetFullView.targetPos.y, tz);
+    //   },
+    // });
+
+    // const tl = gsap.timeline();
+    // tl.to(CameraGodFullView.current.position, {
+    //   x: -100,
+    //   duration: 10,
+    //   ease: 'power2.inOut',
+    //   onUpdate: () => {
+    //     const progress = tl.progress() * (25 / 10);
+    //     const tx = CamOffsetFullView.targetPos.x + 550 * progress;
+    //     const tz = 120;
+    //     console.log('tl 1 progress', {
+    //       progress,
+    //       tcamPos: JSON.stringify({ tx, ty: CamOffsetFullView.targetPos.y, tz }),
+    //       camPos: JSON.stringify({
+    //         x: CameraGodFullView.current.position.x,
+    //         y: CameraGodFullView.current.position.y,
+    //         z: CameraGodFullView.current.position.z,
+    //       }),
+    //     });
+    //     Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+    //     Controls.current.update();
+    //   },
+    // });
+    // tl.to(CameraGodFullView.current.position, {
+    //   x: 50,
+    //   y: 100,
+    //   duration: 10,
+    //   ease: 'power1.inOut',
+    //   onUpdate: () => {
+    //     const progress = (tl.progress() - 10 / 25) * (25 / 10);
+    //     const tx = CamOffsetFullView.targetPos.x + 400 * progress;
+    //     const tz = 20;
+    //     console.log('tl 2 progress', {
+    //       progress,
+    //       tcamPos: JSON.stringify({ tx, ty: CamOffsetFullView.targetPos.y, tz }),
+    //       camPos: JSON.stringify({
+    //         x: CameraGodFullView.current.position.x,
+    //         y: CameraGodFullView.current.position.y,
+    //         z: CameraGodFullView.current.position.z,
+    //       }),
+    //     });
+    //     Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+    //     Controls.current.update();
+    //   },
+    // });
+    // tl.to(CameraGodFullView.current.position, {
+    //   x: 300,
+    //   y: 60,
+    //   duration: 5,
+    //   ease: 'power1.inOut',
+    //   onUpdate: () => {
+    //     const progress = (tl.progress() - 20 / 25) * (25 / 10);
+    //     const tx = CamOffsetFullView.targetPos.x + 650 * progress;
+    //     const tz = 40;
+    //     console.log('tl 3 progress', {
+    //       progress,
+    //       tcamPos: JSON.stringify({ tx, ty: CamOffsetFullView.targetPos.y, tz }),
+    //       camPos: JSON.stringify({
+    //         x: CameraGodFullView.current.position.x,
+    //         y: CameraGodFullView.current.position.y,
+    //         z: CameraGodFullView.current.position.z,
+    //       }),
+    //     });
+    //     Controls.current.target.set(tx, CamOffsetFullView.targetPos.y, tz);
+    //     Controls.current.update();
+    //   },
+    // });
+    // tl.play();
+  };
+
+  const CamOffsetFollowTrackNumber = useRef('-1');
+
+  const CamOffsetFollowBack = useRef({
+    isUse: false,
+    camOffset: { x: -40, y: 10, z: 8 },
+    targetOffset: { x: 0, y: 0, z: 5 },
+    timelines: [],
+  }).current;
+  const handleGodCamFollowBack = () => {
+    CurrentFollowCameraOffset.current = {
+      camOffset: Object.assign({}, CamOffsetFollowBack.camOffset),
+      targetOffset: Object.assign({}, CamOffsetFollowBack.targetOffset),
+    }; // JSON.parse(JSON.stringify(CamOffsetFollowBack));
+    // if (ActiveCamera.current !== Camera.current) {
+    //   ActiveCamera.current = Camera.current;
+    //   Controls.current = new OrbitControls(ActiveCamera.current, Render.current.domElement);
+    //   Controls.current.update();
+    // }
+    //handlePathCamera(CurrentLookAtHModel.current);
+    let numModel = CurrentLookAtHModel.current;
+    if (lookAtTrackNumber.current === '-1') {
+      CamOffsetFollowTrackNumber.current = HModelTrackNumbers[Math.floor(Math.random() * HModelTrackNumbers.length)];
+      console.log('handleGodCamFollowBack trackNum:', CamOffsetFollowTrackNumber.current);
+      numModel = HNumberModelMap.get(CamOffsetFollowTrackNumber.current) as THREE.Object3D;
+    }
+    handlePathCamera(numModel);
+    const tlCam = gsap.timeline({ defaults: { ease: 'none', duration: 6 }, yoyo: true, repeat: 2 });
+    tlCam.to(CurrentFollowCameraOffset.current.camOffset, {
+      x: -10,
+      y: 3,
+      z: -4,
+    });
+    tlCam.to(CurrentFollowCameraOffset.current.camOffset, {
+      x: 30,
+      y: 8,
+      z: 8,
+    });
+    tlCam.play();
+    const tlCamOffset = gsap.timeline({ defaults: { ease: 'none', duration: 6 }, yoyo: true, repeat: 2 });
+    tlCamOffset.to(CurrentFollowCameraOffset.current.targetOffset, {
+      z: 0,
+    });
+    tlCamOffset.to(CurrentFollowCameraOffset.current.targetOffset, {
+      z: 5,
+    });
+    tlCamOffset.play();
+
+    CamOffsetFollowBack.timelines.length = 0;
+    CamOffsetFollowBack.timelines.push(tlCam, tlCamOffset);
+    // gsap.to(CurrentFollowCameraOffset.current.camOffset, {
+    //   x: -10,
+    //   y: 3,
+    //   z: 0,
+    //   duration: 6,
+    //   ease: 'none',
+    //   yoyo: true,
+    //   repeat: 2,
+    //   // onComplete: () => {
+    //   //   CurrentFollowCameraOffset.current = null;
+    //   // },
+    // });
+    // gsap.to(CurrentFollowCameraOffset.current.targetOffset, {
+    //   z: 0,
+    //   duration: 6,
+    //   ease: 'none',
+    //   yoyo: true,
+    //   repeat: 2,
+    // });
+  };
+
+  const CamOffsetFollowBFront = useRef({
+    isUse: false,
+    camOffset: { x: 40, y: 10, z: 8 },
+    targetOffset: { x: 0, y: 0, z: 8 },
+    timelines: [],
+  }).current;
+
+  const handleGodCamFollowFront = () => {
+    //CurrentFollowCameraOffset.current = JSON.parse(JSON.stringify(CamOffsetFollowBFront));
+    CurrentFollowCameraOffset.current = {
+      camOffset: Object.assign({}, CamOffsetFollowBFront.camOffset),
+      targetOffset: Object.assign({}, CamOffsetFollowBFront.targetOffset),
+    };
+    let numModel = CurrentLookAtHModel.current;
+    if (lookAtTrackNumber.current === '-1') {
+      CamOffsetFollowTrackNumber.current = HModelTrackNumbers[Math.floor(Math.random() * HModelTrackNumbers.length)];
+      console.log('handleGodCamFollowFront trackNum:', CamOffsetFollowTrackNumber.current);
+      numModel = HNumberModelMap.get(CamOffsetFollowTrackNumber.current) as THREE.Object3D;
+    }
+    handlePathCamera(numModel);
+
+    const tlCam = gsap.timeline({ defaults: { ease: 'none', duration: 6 }, yoyo: true, repeat: 2 });
+    tlCam.to(CurrentFollowCameraOffset.current.camOffset, {
+      x: 5,
+      y: 3,
+      z: -4,
+    });
+    tlCam.to(CurrentFollowCameraOffset.current.camOffset, {
+      x: -30,
+      y: 10,
+      z: 8,
+    });
+    tlCam.play();
+    const tlCamOffset = gsap.timeline({ defaults: { ease: 'none', duration: 6 }, yoyo: true, repeat: 2 });
+    tlCamOffset.to(CurrentFollowCameraOffset.current.targetOffset, {
+      z: 0,
+    });
+    tlCamOffset.to(CurrentFollowCameraOffset.current.targetOffset, {
+      z: 5,
+    });
+    tlCamOffset.play();
+
+    CamOffsetFollowBFront.timelines.length = 0;
+    CamOffsetFollowBFront.timelines.push(tlCam, tlCamOffset);
+
+    // gsap.to(CurrentFollowCameraOffset.current.camOffset, {
+    //   x: 10,
+    //   y: 3,
+    //   z: 0,
+    //   duration: 6,
+    //   ease: 'none',
+    //   // onComplete: () => {
+    //   //   CurrentFollowCameraOffset.current = null;
+    //   // },
+    // });
+    // gsap.to(CurrentFollowCameraOffset.current.targetOffset, {
+    //   z: -3,
+    //   duration: 6,
+    //   ease: 'none',
+    // });
+  };
+
+  const handleGodCamRun = () => {
+    CamOffsetFullView.timelines.forEach((tl) => {
+      tl.pause();
+    });
+    CurrentFollowCameraOffset.current = null;
+    handlePathCamera(CurrentLookAtHModel.current);
+    HAsyncTaskQueueRef.push({
+      name: 'FollowCamRun',
+      lastTime: Date.now() + 3 * 1000,
+      run: (task) => {
+        const now = Date.now();
+        if (now - task.lastTime > 8 * 1000) {
+          const rdm = Math.floor(Math.random() * 10 * 1000);
+          const camIdx = Math.floor(Math.random() + 0.5);
+          camIdx === 0 ? handleGodCamFollowBack() : handleGodCamFollowFront();
+          console.log('HAsyncTaskQueueRef ' + task.name, {
+            camIdx,
+            lastTime: task.lastTime,
+            now,
+            rdm,
+            interval: now + rdm,
+          });
+          task.lastTime = now + rdm;
+        }
+      },
+    });
+  };
+  //#endregion
+
+  //#region  页面操作按钮
+  const handleSelectHorseChange = (e) => {
+    //console.log('handleSelectChange e:', e);
+    lookAtTrackNumber.current = e.target.value;
+    pathTerminusCamVector3.isUse = false;
+
+    CurrentLookAtAnimationType.current.hCode = e.target.value;
+    CurrentLookAtAnimationType.current.animType = HorseManCurrentAnimationType.current;
+
+    //SoundArenaUtil.skillsOvertake.sound.play();
+  };
+
+  const handleSelectChange = (e) => {
+    //console.log('handleSelectChange e:', e);
+    setSelectSpeed(e.target.value);
+
+    pathPlaySpeed.current = parseInt(e.target.value);
+    //处理加减速之后点的位置
+    const prePathLength = aiRaceResult.current[0].speedData.length;
+    const resHorsePaths = TrackArenaUtilInstance.current.getRacePathByRaceData(raceDataInfo, segCount, pathPlaySpeed);
+    aiRaceResult.current = resHorsePaths;
+    const currPathLength = resHorsePaths[0].speedData.length;
+    pathIndex.current = Math.floor((pathIndex.current / prePathLength) * currPathLength);
+  };
+  const handleHAnimScaleSelectChange = (e) => {
+    //console.log('handleSelectChange e:', e);
+    HAnimationTimeScale.current = parseFloat(e.target.value);
+    console.log('handleHAnimScaleSelectChange actTimeScale:', HAnimationTimeScale.current);
+    HorseManRunActionMap.forEach((val) => {
+      val.forEach((actionHorseRun) => {
+        //actionHorseRun.timeScale = HAnimationTimeScale.current; // 0.4;
+        actionHorseRun.setEffectiveTimeScale(HAnimationTimeScale.current);
+      });
+    });
+  };
+
+  const handleSwitchGodCamSelectChange = (e) => {
+    console.log('handleSwitchGodCamSelectChange e value:', e.target.value);
+    switch (e.target.value) {
+      case '1':
+        handleGodCamFullView();
+        break;
+      case '2':
+        handleGodCamFollowBack();
+        break;
+      case '3':
+        handleGodCamFollowFront();
+        break;
+      case '4':
+        handleGodCamRun();
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleSwitchCamera = () => {
+    if (ActiveCamera.current === Camera.current) {
+      loadingHide(() => {
+        animateCameraTransition(Camera.current, Camera2.current);
+      });
+    } else {
+      animateCameraTransition(Camera2.current, Camera.current);
+    }
+  };
+  //#endregion
+
   //#region loaderGlgModel
-
-  // const loaderGlgModelQiPao = useCallback(() => {
-  //   const glbFile = '/models/3d/qipao.glb';
-  //   const loader = new GLTFLoader(loadManager.current);
-
-  //   loader.load(glbFile, (obj) => {
-  //     console.log('glbFile qipao obj :', obj);
-  //     const model = obj.scene;
-  //     model.position.set(-142, 19.2, 39.1);
-  //     model.rotation.y = -Math.PI;
-  //     model.castShadow = true;
-  //     Scene.current.add(model);
-  //   });
-  // }, []);
 
   const loaderGlgModel = useCallback((hNumber = '1', r = 0, hPosVec3: THREE.Vector3) => {
     const loader = new GLTFLoader(loadManager.current);
@@ -328,25 +808,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       Scene.current.add(model);
       //全部马模型加载完成
       if (HModelTrackNumbers.length === HNumberModelMap.size) {
-        //handleHorseMansRunAction();
-        //handlePathCamera(model);
-        //起点相机位置 赛场模型 field_008
-        //Camera.current.position.set(-420, 7.64, 151.1);
-        //Camera.current.position.set(-410, 7.43, 132.2);
-        // const hcv = HorseOffsetCamVector3.current;
-        // const hrbcvC = HRaceBeginOffsetCamVector3.current.camOffset;
-        // Camera.current.position
-        //   .copy(cmodel.position)
-        //   .add(new THREE.Vector3(hcv.x + hrbcvC.x, hcv.y + hrbcvC.y, hcv.z + hrbcvC.z));
-        // const cVector3 = cmodel.position;
-        // //const cVector3 = new THREE.Vector3(-437.9, 1, 130);
-        // //console.log('the one cVector3', cVector3);
-
-        // const hrbcvT = HRaceBeginOffsetCamVector3.current.targetOffset;
-        // cVector3.add(new THREE.Vector3(hrbcvT.x, hrbcvT.y, hrbcvT.z));
-        // Camera.current.lookAt(cVector3);
-        // Controls.current.target.copy(cVector3);
-        // Controls.current.update();
         const cmodel = HNumberModelMap.get('1');
         handlePathCamera(cmodel);
       }
@@ -355,10 +816,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
 
   const loaderGlgModelAnimations = useCallback(() => {
     const loader = new GLTFLoader(loadManager.current);
-    // hAnimationType = 'stand'
-    // let cHorseManModel = horseManStandModel;
-    // if (hAnimationType === 'run') cHorseManModel = horseManRunModel;
-    // else if (hAnimationType === 'sprint') cHorseManModel = horseManSprintModel;
+
     loader.load(horseManAnimStandModel, (obj) => {
       console.log('horseManAnimStandModel obj :', obj);
       HorseManBaseAnimationMap.set(AnimationType.Stand, obj.animations);
@@ -371,31 +829,14 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     //   console.log('horseManAnimSprintModel obj :', obj);
     //   HorseManBaseAnimationMap.set(AnimationType.Sprint, obj.animations);
     // });
-    loader.load(horseManAnimRun2SprintModel, (obj) => {
-      console.log('horseManAnimRun2SprintModel obj :', obj);
+    loader.load(horseManAnimSprintFastModel, (obj) => {
+      console.log('horseManAnimSprintFastModel obj :', obj);
       HorseManBaseAnimationMap.set(AnimationType.Sprint, obj.animations);
     });
     loader.load(horseManAnimWhiplashModel, (obj) => {
       console.log('horseManAnimWhiplashModel obj :', obj);
       HorseManBaseAnimationMap.set(AnimationType.Whiplash, obj.animations);
     });
-
-    loader.load(horseManAnimRun2OvertakeModel, (obj) => {
-      console.log('horseManAnimRun2OvertakeModel obj :', obj);
-      HorseManBaseAnimationMap.set(AnimationType.Overtake, obj.animations);
-    });
-    loader.load(horseManAnimRun2HoldModel, (obj) => {
-      console.log('horseManAnimRun2HoldModel obj :', obj);
-      HorseManBaseAnimationMap.set(AnimationType.Hold, obj.animations);
-    });
-
-    // let obj = await loader.loadAsync(horseManAnimStandModel);
-    // HorseManBaseAnimationMap.set(AnimationType.Stand, obj.animations);
-    // obj = await loader.loadAsync(horseManAnimRunModel);
-    // HorseManBaseAnimationMap.set(AnimationType.Run, obj.animations);
-    // obj = await loader.loadAsync(horseManAnimSprintModel);
-    // HorseManBaseAnimationMap.set(AnimationType.Sprint, obj.animations);
-    //HorseManAnimationFps.current = await getFps(loadManager.current);
   }, []);
 
   const loaderGlgRaceArena = useCallback(() => {
@@ -405,7 +846,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     for (let index = 1; index <= 5; index++) {
       const modelFile = horseRaceArenaModelPath + 'arena_' + index + '.glb';
       loader.load(modelFile, (obj) => {
-        console.log('horseRaceArenaModel ' + index + ' obj:', obj);
+        //console.log('horseRaceArenaModel ' + index + ' obj:', obj);
         const model = obj.scene;
         model.position.set(62, 17.4, 39);
         model.rotation.y = -Math.PI;
@@ -422,14 +863,10 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
               child.position.set(204.4, 0, -0.1); //起点位置 赛场模型 field_008
               //child.visible = false;
             }
-            // if (child.name === 'Finish_G' || child.name === 'Finish') {
-            //   child.position.x = -47.5;
-            // }
-            //  tanceqi_G 终点电线杆    saidao_6终点地面引导
-            // if (child.name === 'saidao_6') {
-            //   child.position.x = -4600;
-            // }
-            if (child.name === 'kantai_G' || child.name === 'kantai_ren_G' || child.name === 'yidongG') {
+            if (child.name === 'Finish_G' || child.name === 'Finish') {
+              child.position.x = -47.5;
+            }
+            if (child.name === 'kantai_G' || child.name === 'ren_G') {
               child.position.x = -46;
             }
             if (child.name === 'jianzhu_3') {
@@ -485,12 +922,11 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const createLight = useCallback(() => {
     // const ambientLight = new THREE.AmbientLight('#ffffff', 3);
     // Scene.current.add(ambientLight);
-    const derlight = new THREE.DirectionalLight(0xffffff, 2);
+    const derlight = new THREE.DirectionalLight(0xffffff, 3);
     derlight.position.set(0, 200, 0);
-    // derlight.target.position.set(0, 0, 0);
+    derlight.target.position.set(0, 0, 0);
     derlight.castShadow = true;
     Scene.current.add(derlight);
-
     const derlight2 = new THREE.DirectionalLight(0xffffff, 0.8);
     derlight2.position.set(-460, 10, 0);
     derlight2.target.position.set(0, 1, 0);
@@ -504,44 +940,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     Scene.current.add(derlight3);
     // const dhelp = new THREE.DirectionalLightHelper(derlight);
     // Scene.current.add(dhelp);
-
-    // const spotLight = new THREE.SpotLight(0xffffff, 5, 30);
-    // spotLight.position.set(-450, 10, 120);
-    // spotLight.angle = Math.PI / 6;
-    // spotLight.penumbra = 0.2;
-    // spotLight.decay = 0.3;
-    // spotLight.castShadow = true;
-    // spotLight.target.position.set(-440, 0, 130);
-    // Scene.current.add(spotLight);
-    // SpotLightModel.current = spotLight;
-    // const helper = new THREE.SpotLightHelper(spotLight);
-    // Scene.current.add(helper);
-    //Scene.current.remove(helper);
-
-    // //测试
-    // const plane = new THREE.Mesh(
-    //   new THREE.PlaneGeometry(1000, 1000),
-    //   //new THREE.MeshPhongMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide })
-    //   new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide })
-    // );
-    // //plane.castShadow = true;
-    // plane.receiveShadow = true;
-    // plane.position.set(0, -0.8, 0);
-    // plane.rotation.x = -Math.PI / 2;
-    // Scene.current.add(plane);
-
-    // const spotLight = new THREE.SpotLight(0xffffff, 10, 200);
-    // spotLight.position.set(0, 120, 200);
-    // spotLight.angle = Math.PI / 6;
-    // spotLight.penumbra = 0.2;
-    // spotLight.decay = 0.3;
-    // spotLight.castShadow = true;
-    // spotLight.target.position.set(-100, 1, 70);
-    // Scene.current.add(spotLight);
-    // SpotLightModel.current = spotLight;
-    // const helper = new THREE.SpotLightHelper(spotLight);
-    // Scene.current.add(helper);
-    //Scene.current.remove(helper);
   }, []);
 
   const createSkydomeHdr = () => {
@@ -551,11 +949,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       map: panoramaTexture,
       side: THREE.BackSide,
     });
-    // const skydomeMaterial = new THREE.MeshStandardMaterial({
-    //   side: THREE.BackSide,
-    //   envMap: panoramaTexture,
-    //   // envMapIntensity: 1,
-    // });
 
     const skydomeGeometry = new THREE.SphereGeometry(600, 60, 40);
     const skydome = new THREE.Mesh(skydomeGeometry, skydomeMaterial);
@@ -569,20 +962,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       ease: 'none',
       repeat: -1,
     });
-
-    // skydome.rotation.y = Math.PI / 1.4;
-    // skydome.rotation.x = -0.3;
-    // gsap.to(skydome.rotation, {
-    //   y: Math.PI / 1.4,
-    //   duration: 600,
-    //   ease: 'none',
-    //   repeat: -1,
-    // });
-
-    // const skybox = new GroundProjectedSkybox(panoramaTexture);
-    // skybox.scale.setScalar(1000);
-    // Scene.current.add(skybox);
-    //Scene.current.environment = panoramaTexture;
 
     const sEnvTexture = new THREE.TextureLoader(loadManager.current).load(sceneEnvHdrJpg);
     //const sEnvTexture = new RGBELoader(loadManager.current).load(sceneEnvHdr);
@@ -622,18 +1001,12 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const handleHCodeTerminusTScale = (hCode) => {
     if (!isRank1TerminusTScaleRef.current) {
       isRank1TerminusTScaleRef.current = true;
-      // HorseManRunActionHCodeMap.get(hCode).forEach((cAction) => {
-      //   prevTScale = cAction.getEffectiveTimeScale();
-      //   cAction.setEffectiveTimeScale(prevTScale * 0.5);
-      // });
+
       HorseManRunActionMap.get(HorseManCurrentAnimationType.current).forEach((cAction) => {
         prevTScale = cAction.timeScale;
         cAction.timeScale = prevTScale * 0.5;
       });
       setTimeout(() => {
-        // HorseManRunActionHCodeMap.get(hCode).forEach((cAction) => {
-        //   cAction.setEffectiveTimeScale(prevTScale);
-        // });
         HorseManRunActionMap.get(HorseManCurrentAnimationType.current).forEach((cAction) => {
           cAction.timeScale = prevTScale;
         });
@@ -669,41 +1042,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     }
   };
 
-  const handleSelectHorseChange = (e) => {
-    //console.log('handleSelectChange e:', e);
-    lookAtTrackNumber.current = e.target.value;
-    pathTerminusCamVector3.isUse = false;
-
-    CurrentLookAtAnimationType.current.hCode = e.target.value;
-    CurrentLookAtAnimationType.current.animType = HorseManCurrentAnimationType.current;
-
-    //SoundArenaUtil.skillsOvertake.sound.play();
-  };
-
-  const handleSelectChange = (e) => {
-    //console.log('handleSelectChange e:', e);
-    setSelectSpeed(e.target.value);
-
-    pathPlaySpeed.current = parseInt(e.target.value);
-    //处理加减速之后点的位置
-    const prePathLength = aiRaceResult.current[0].speedData.length;
-    const resHorsePaths = TrackArenaUtilInstance.current.getRacePathByRaceData(raceDataInfo, segCount, pathPlaySpeed);
-    aiRaceResult.current = resHorsePaths;
-    const currPathLength = resHorsePaths[0].speedData.length;
-    pathIndex.current = Math.floor((pathIndex.current / prePathLength) * currPathLength);
-  };
-  const handleHAnimScaleSelectChange = (e) => {
-    //console.log('handleSelectChange e:', e);
-    HAnimationTimeScale.current = parseFloat(e.target.value);
-    console.log('handleHAnimScaleSelectChange actTimeScale:', HAnimationTimeScale.current);
-    HorseManRunActionMap.forEach((val) => {
-      val.forEach((actionHorseRun) => {
-        //actionHorseRun.timeScale = HAnimationTimeScale.current; // 0.4;
-        actionHorseRun.setEffectiveTimeScale(HAnimationTimeScale.current);
-      });
-    });
-  };
-
   const loaderCreateRacePath = useCallback(() => {
     const resHorsePaths = TrackArenaUtilInstance.current.getRacePathByRaceData(raceDataInfo, segCount, pathPlaySpeed);
 
@@ -726,7 +1064,10 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     if (Camera.current && hNumModel && Controls.current) {
       CurrentLookAtHModel.current = hNumModel;
       const hCamVector3 = HorseOffsetCamVector3.current;
-      const beginCamVector3 = HRaceBeginOffsetCamVector3.current.camOffset;
+      const beginCamVector3 = CurrentFollowCameraOffset.current
+        ? CurrentFollowCameraOffset.current.camOffset
+        : HRaceBeginOffsetCamVector3.current.camOffset;
+      //console.log('beginCamVector3:', beginCamVector3);
       const hCamVector3X = hNumModel.position.z > 0 ? hCamVector3.x : -hCamVector3.x;
       const hcvxAdd = new THREE.Vector3(
         hCamVector3X + beginCamVector3.x,
@@ -738,7 +1079,10 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     }
   };
   const updateCamLookAtByHNumModel = (hNumModel) => {
-    const camVector3Target = HRaceBeginOffsetCamVector3.current.targetOffset;
+    const camVector3Target = CurrentFollowCameraOffset.current
+      ? CurrentFollowCameraOffset.current.targetOffset
+      : HRaceBeginOffsetCamVector3.current.targetOffset;
+    //console.log('camVector3Target:', camVector3Target);
     const cVector3 = hNumModel.position.clone();
     cVector3.add(new THREE.Vector3(camVector3Target.x, camVector3Target.y + 1.6, camVector3Target.z));
     Camera.current.lookAt(cVector3);
@@ -746,15 +1090,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     Controls.current.update();
   };
 
-  const handleSwitchCamera = () => {
-    if (ActiveCamera.current === Camera.current) {
-      loadingHide(() => {
-        animateCameraTransition(Camera.current, Camera2.current);
-      });
-    } else {
-      animateCameraTransition(Camera2.current, Camera.current);
-    }
-  };
   /**
    *
    * @param animationType 动画列表索引  // run 正常跑; sprint 疾跑 ; stand 待机
@@ -769,26 +1104,16 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
           const cModel = model;
           const mixerLeftHorse = new THREE.AnimationMixer(cModel);
           const actionHorseRun = mixerLeftHorse.clipAction(cAnimations[0]);
-          // if (ckey === AnimationType.Whiplash) {
-          //   actionHorseRun.loop = THREE.LoopOnce;
-          // } else actionHorseRun.loop = THREE.LoopRepeat;
           actionHorseRun.loop = THREE.LoopRepeat;
           actionHorseRun.clampWhenFinished = true;
-          //actionHorseRun.timeScale = 0.4;
           actionHorseRun.setEffectiveTimeScale(0.4);
-          //if (ckey !== AnimationType.Whiplash) actionHorseRun.time = Math.random() * 2;
           if (ckey === AnimationType.Stand) {
             const rdm = Math.random() * 10;
             //console.log('rdm', rdm);
             actionHorseRun.time = rdm;
           }
           actionHorseRun.play();
-          // mixerLeftHorse.addEventListener('loop', (e) => {
-          //   console.log('mixerLeftHorse loop ' + ckey + ' ' + cModel.name, e);
-          // });
-          // mixerLeftHorse.addEventListener('finished', (e) => {
-          //   console.log('mixerLeftHorse finished ' + ckey + ' ' + cModel.name, e);
-          // });
+
           horseManRunActions.push(actionHorseRun);
           horseManRunMixers.push(mixerLeftHorse);
         });
@@ -828,8 +1153,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
 
   const handleSwitchAnimation = (newAnimType: AnimationType, onFinished: any) => {
     console.log('handleSwitchAnimation newAnimType:', newAnimType, CurrentLookAtAnimationType.current);
-    //const currentMixer = HorseManRunMixerMap.get(HorseManCurrentAnimationType.current)[horseIdx];
-    //const currentMixers = HorseManRunMixerMap.get(HorseManCurrentAnimationType.current);
 
     if (!CurrentAnimationIsRunning.current) {
       CurrentAnimationIsRunning.current = true;
@@ -900,9 +1223,7 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const animateCameraTransition = (startCamera, endCamera) => {
     const startPos = startCamera.position.clone();
     const endPos = endCamera.position.clone();
-    // const endPos =
-    //   endCamera === Camera.current ? CurrentLookAtHModel.current.position.clone() : new THREE.Vector3(0, 50, -100); //endCamera.position.clone();
-    //console.log('startPosstartPos11 :', startPos, endPos);
+
     const duration = 1;
     const ease = 'power4.inOut';
     gsap.to(startCamera.position, {
@@ -920,10 +1241,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       ActiveCamera.current = endCamera;
       startCamera.position.copy(startPos);
       Controls.current = new OrbitControls(ActiveCamera.current, Render.current.domElement);
-      // Controls.current.addEventListener('change', () => {
-      //   console.log('Camera position:', ActiveCamera.current.position);
-      //   //renderScene();
-      // });
       CurrentLookAtHModel.current && Controls.current.target.copy(CurrentLookAtHModel.current.position);
       Controls.current.maxPolarAngle = Math.PI / 2;
       Controls.current.minPolarAngle = Math.PI / 4;
@@ -937,6 +1254,20 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     }, duration * 1000);
   };
 
+  const handleSwitchHRaceBeginOffsetCam = () => {
+    const hRBeginV3Cam = HRaceBeginOffsetCamVector3.current.camOffset;
+    if (hRBeginV3Cam.x > 0) {
+      const hRBeginV3Tar = HRaceBeginOffsetCamVector3.current.targetOffset;
+      const hRBeginV3CamOri = HRaceBeginOffsetCamVector3.current.camOffsetOri;
+      const hRBeginV3TarOri = HRaceBeginOffsetCamVector3.current.targetOffsetOri;
+      hRBeginV3Cam.x -= parseFloat((hRBeginV3CamOri.x / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
+      hRBeginV3Cam.y -= parseFloat((hRBeginV3CamOri.y / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
+      hRBeginV3Cam.z -= parseFloat((hRBeginV3CamOri.z / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
+      hRBeginV3Tar.z -= parseFloat((hRBeginV3TarOri.z / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
+      //console.log('HRaceBeginOffsetCamVector3:', JSON.stringify(HRaceBeginOffsetCamVector3.current));
+    }
+  };
+
   //#endregion
 
   //#region init renderScene
@@ -945,119 +1276,36 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const fps2 = useRef(0);
   const lastCalledTime2 = useRef(performance.now());
 
-  const clock = new THREE.Clock();
-  let isPlayPause = false;
-  // let prevSwitchAnimaTime = 0;
-  // let cAnimaType = HorseManCurrentAnimationType.current;
-  const cAHCodeInfo = {
-    hCode: '1',
-    animaType: HorseManCurrentAnimationType.current,
-    prevTime: 0,
-  };
-
   // 渲染画面
   const renderScene = useCallback(() => {
     // console.log('renderScene renderScene ', Date.now());
-    // const delta = (performance.now() - lastCalledTime.current) / 1000;
-    // fps.current = Math.round(1 / delta);
-    // setCurrentRealFps(fps.current);
-    // lastCalledTime.current = performance.now();
-    //console.log(fps.current + ' fps');
     fps2.current++;
     if (performance.now() - lastCalledTime2.current >= 1000) {
       lastCalledTime2.current = performance.now();
       //console.log('Current fps(1s):' + fps2.current);
       setCurrentRealFps(fps2.current);
       fps2.current = 0;
-
-      // if (pathCount.current === 0) {
-      //   const resHorsePaths: any[] = [];
-      //   for (let index = 0; index < aiRaceResult.current.length; index++) {
-      //     const chorse = aiRaceResult.current[index];
-      //     const pathPre = chorse.speedData[pathIndex.current];
-      //     resHorsePaths.push({
-      //       gameHorseId: chorse.gameHorseId,
-      //       ranking: chorse.ranking,
-      //       trackNumber: chorse.trackNumber,
-      //       interval: 0.5,
-      //       speedData: {
-      //         xa: -pathPre.xa,
-      //         ya: pathPre.za,
-      //         za: 0,
-      //         t: pathPre.t,
-      //         ranking: pathPre.ranking,
-      //       },
-      //     });
-      //   }
-      //   handleRaceData && handleRaceData(resHorsePaths);
-      // }
     }
 
-    // HorseManRunMixerMap.get(HorseManCurrentAnimationType.current)?.forEach((item) => {
-    //   item.update(0.02);
-    // });
-    // const cDelta = clock.getDelta();
-    // let cccIdx = 0;
     HorseManRunMixerHCodeMap?.forEach((mixerMap, hCode) => {
-      // const cAnimaHCodeInfo = cAnimaHCodeInfoSz[cccIdx];
-      // if (cAnimaSz.includes(HorseManCurrentAnimationType.current)) {
-      //   if (cAnimaHCodeInfo.prevTime === 0) cAnimaHCodeInfo.prevTime = Date.now();
-      //   if (Date.now() - cAnimaHCodeInfo.prevTime > 4000) {
-      //     const rdm = Math.random();
-      //     cAnimaHCodeInfo.animaType = cAnimaSz[rdm > 0.5 ? 1 : 0];
-      //     cAnimaHCodeInfo.prevTime = Date.now() + 3000 * rdm;
-      //     //console.log('cAnimaHCodeInfo:', { cAnimaHCodeInfo });
-      //   }
-      // } else {
-      //   cAnimaHCodeInfo.animaType = HorseManCurrentAnimationType.current;
-      // }
-      // cccIdx++;
-      // if (CurrentLookAtAnimationType.current.hCode === hCode) {
-      //   mixerMap.get(CurrentLookAtAnimationType.current.animType)?.update(0.02);
-      // } else {
-      //   //mixerMap.get(HorseManCurrentAnimationType.current)?.update(0.02);
-      //   cAnimaHCodeInfoSz.forEach((ahcItem) => {
-      //     if (ahcItem.hCode === hCode) {
-      //       mixerMap.get(ahcItem.animaType)?.update(0.02);
-      //     }
-      //   });
-      // }
       if (CurrentLookAtAnimationType.current.hCode === hCode) {
         mixerMap.get(CurrentLookAtAnimationType.current.animType)?.update(0.02);
       } else mixerMap.get(HorseManCurrentAnimationType.current)?.update(0.02);
     });
 
+    HAsyncTaskQueueRef.forEach((task) => {
+      task.run(task);
+    });
+
     if (HNumberModelMap.size > 0) {
       //pathCount.current < 1 只跑一圈
       if (pathCount.current < 1 && racePathPlay.current) {
-        isPlayPause = false;
         //每秒40帧 // 25= 1000/40
         if (performance.now() - lastTimestampMS.current >= 25) {
           lastTimestampMS.current = performance.now();
           handleRenderScene && handleRenderScene();
           if (pathIndex.current < aiRaceResult.current[0].speedData.length) {
-            // if (HorseOffsetCamVector3.current.x > 0) {
-            //   HorseOffsetCamVector3.current.x -= 0.0298 * pathPlaySpeed.current;
-            //   HorseOffsetCamVector3.current.y -= 0.0083 * pathPlaySpeed.current;
-            //   HorseOffsetCamVector3.current.z -= 0.0166 * pathPlaySpeed.current;
-            //   //const HorseOffsetCamVector3 = useRef({ x: 0, y: 3, z: 15 });
-            //   //const HorseOffsetCamVector3 = useRef({ x: 17.9, y: 6.64, z: 30 });
-            // }
-            const hRBeginV3Cam = HRaceBeginOffsetCamVector3.current.camOffset;
-            const hRBeginV3Tar = HRaceBeginOffsetCamVector3.current.targetOffset;
-            const hRBeginV3CamOri = HRaceBeginOffsetCamVector3.current.camOffsetOri;
-            const hRBeginV3TarOri = HRaceBeginOffsetCamVector3.current.targetOffsetOri;
-            if (hRBeginV3Cam.x > 0) {
-              // hRBeginV3Cam.x -= (Math.round((hRBeginV3CamOri.x / 5 / 40) * 10000) / 10000) * pathPlaySpeed.current;
-              // hRBeginV3Cam.y -= (Math.round((hRBeginV3CamOri.y / 5 / 40) * 10000) / 10000) * pathPlaySpeed.current;
-              // hRBeginV3Cam.z += (Math.round((hRBeginV3CamOri.z / 5 / 40) * 10000) / 10000) * pathPlaySpeed.current;
-              // hRBeginV3Tar.z -= (Math.round((hRBeginV3TarOri.z / 5 / 40) * 10000) / 10000) * pathPlaySpeed.current;
-              hRBeginV3Cam.x -= parseFloat((hRBeginV3CamOri.x / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
-              hRBeginV3Cam.y -= parseFloat((hRBeginV3CamOri.y / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
-              hRBeginV3Cam.z -= parseFloat((hRBeginV3CamOri.z / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
-              hRBeginV3Tar.z -= parseFloat((hRBeginV3TarOri.z / 5 / 40).toFixed(5)) * pathPlaySpeed.current;
-              //console.log('HRaceBeginOffsetCamVector3:', JSON.stringify(HRaceBeginOffsetCamVector3.current));
-            }
+            handleSwitchHRaceBeginOffsetCam();
 
             for (let index = 0; index < HNumberModelMap.size; index++) {
               const raceRes = aiRaceResult.current[index];
@@ -1078,30 +1326,14 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
                 if (pathPlaySpeed.current !== 1) {
                   numModel.rotation.y = -Math.PI / 2 + path.r;
                 }
-                // if (path.isZero && index === 0) {
-                //   path.t % 12 === 0 && SoundArenaUtil.skillsWhip.sound.play();
-                //   path.t % 30 === 0 && SoundArenaUtil.skillsOvertake.sound.play();
-                // }
 
                 //保证马已经起跑
                 if (path.t > 80) {
-                  // if (path.ranking === 1 && path.xa < pathTerminusCamVector3.targetPos.x + 40) {
-                  //   //处理第一名冲线
-                  //   handleSwitchHCode1TerminusCam(raceRes.trackNumber);
-                  // }
                   //镜头过终点线
                   if (path.xa < pathTerminusCamVector3.targetPos.x + 20) {
-                    // handleCamTerminus({
-                    //   gameHorseId: raceRes.gameHorseId,
-                    //   trackNumber: raceRes.trackNumber,
-                    //   speedData: {
-                    //     ranking: path.ranking,
-                    //     isEnd: true,
-                    //   },
-                    // });
+                    //
                   }
                   if (path.xa < pathTerminusCamVector3.targetPos.x + 30) {
-                    //handleSwitchTerminusNear(rRank);
                     //处理当前观看中的马冲线
                     raceRes.trackNumber === lookAtTrackNumber.current &&
                       handleSwitchHCodeTerminusCam(raceRes.trackNumber);
@@ -1113,15 +1345,17 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
                   // //处理号码牌 旋转后位置不居中的问题
                   // path.r < Math.PI * 2 && (hnbModel.position.z = (path.r - Math.PI) / 10);
                 }
-                if (HModelTrackNumbers.includes(lookAtTrackNumber.current)) {
-                  if (raceRes.trackNumber === lookAtTrackNumber.current) {
-                    handlePathCamera(numModel);
-                  }
+                //if (HModelTrackNumbers.includes(lookAtTrackNumber.current)) {
+                if (raceRes.trackNumber === lookAtTrackNumber.current) {
+                  handlePathCamera(numModel);
+                } else if (raceRes.trackNumber === CamOffsetFollowTrackNumber.current) {
+                  handlePathCamera(numModel);
                 } else if (path.t <= 12) {
+                  //第一道
+                  raceRes.trackNumber === HModelTrackNumbers[0] && handlePathCamera(numModel);
                   //起跑的前12秒 镜头对准最外侧的马
                   // raceRes.trackNumber === HModelTrackNumbers[HModelTrackNumbers.length - 1] &&
                   //   handlePathCamera(numModel);
-                  raceRes.trackNumber === HModelTrackNumbers[0] && handlePathCamera(numModel);
                 } else if (path.ranking === 1) {
                   handlePathCamera(numModel);
                 }
@@ -1135,15 +1369,8 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
           }
         }
       } else {
-        if (!isPlayPause) {
-          isPlayPause = true;
-          HorseManCurrentAnimationType.current = AnimationType.Stand;
-          CurrentLookAtAnimationType.current.animType = AnimationType.Stand;
-          // cAnimaHCodeInfoSz.forEach((ahcItem) => {
-          //   ahcItem.prevTime = 0;
-          //   ahcItem.animaType = AnimationType.Stand;
-          // });
-        }
+        HorseManCurrentAnimationType.current = AnimationType.Stand;
+        CurrentLookAtAnimationType.current.animType = AnimationType.Stand;
       }
     }
     Render.current.render(Scene.current, ActiveCamera.current);
@@ -1153,10 +1380,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
   const init = useCallback(() => {
     loadManager.current = new THREE.LoadingManager();
     loadManager.current.onLoad = () => setLoaded(100);
-    // loadManager.current.onStart = (_, loaded, total) => {
-    //   console.log('loadManager.current.onStart', { _, loaded, total });
-    //   setLoaded((loaded / total) * 100);
-    // };
     loadManager.current.onProgress = (_, loaded, total) => {
       const ctotal = total < 300 ? 300 : total;
       //console.log('loadManager.current.onProgress', { _, loaded, total, ctotal, parss: (loaded / ctotal) * 100 });
@@ -1170,6 +1393,11 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     Scene.current = new THREE.Scene();
     Camera.current = new THREE.PerspectiveCamera();
     Camera2.current = new THREE.PerspectiveCamera();
+
+    // CameraGodFullView.current = new THREE.PerspectiveCamera();
+    // CameraGodFollowBack.current = new THREE.PerspectiveCamera();
+    // CameraGodFollowFront.current = new THREE.PerspectiveCamera();
+
     ModelObjBoxGroup.current = new THREE.Group();
 
     hNumberBoardGeo.current = new THREE.CircleGeometry(0.2, 30);
@@ -1197,19 +1425,42 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     Camera2.current.near = 0.1;
     Camera2.current.far = 1200;
     Camera2.current.position.set(-480, 20, 150); //8 120 -180
-    //Camera2.current.position.add(new THREE.Vector3(100, 170, 130));
     Camera2.current.lookAt(-420, 1, 120);
+
+    // CameraGodFullView.current.fov = 45;
+    // CameraGodFullView.current.near = 0.1;
+    // CameraGodFullView.current.far = 1200;
+
+    // CameraGodFullView.current.position.set(
+    //   CamOffsetFullView.camPos.x,
+    //   CamOffsetFullView.camPos.y,
+    //   CamOffsetFullView.camPos.z
+    // );
+    // CameraGodFullView.current.lookAt(
+    //   CamOffsetFullView.targetPos.x,
+    //   CamOffsetFullView.targetPos.y,
+    //   CamOffsetFullView.targetPos.y
+    // );
+
+    // CameraGodFollowBack.current.fov = 45;
+    // CameraGodFollowBack.current.near = 0.1;
+    // CameraGodFollowBack.current.far = 1200;
+    // CameraGodFollowBack.current.position.set(-450, 50, 150);
+    // CameraGodFollowBack.current.lookAt(-420, 1, 120);
+
+    // CameraGodFollowFront.current.fov = 45;
+    // CameraGodFollowFront.current.near = 0.1;
+    // CameraGodFollowFront.current.far = 1200;
+    // CameraGodFollowFront.current.position.set(-450, 50, 150);
+    // CameraGodFollowFront.current.lookAt(-420, 1, 120);
 
     ActiveCamera.current = Camera.current;
     Controls.current = new OrbitControls(ActiveCamera.current, Render.current.domElement);
     Controls.current.enabled = false;
-    Controls.current.addEventListener('change', () => {
-      console.log('Camera position:', ActiveCamera.current.position, Controls.current.target);
-      //renderScene();
-      // HNumberBoardModelMap.forEach((bModel) => {
-      //   bModel.quaternion.copy(ActiveCamera.current.quaternion);
-      // });
-    });
+    // Controls.current.addEventListener('change', () => {
+    //   console.log('Camera position:', ActiveCamera.current.position, Controls.current.target);
+    //   //renderScene();
+    // });
 
     const loader = new GLTFLoader(loadManager.current);
     //预加载
@@ -1221,12 +1472,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
       RaceAudioRef,
       HRaceIsPlayBroadcast.current
     );
-
-    // document.addEventListener('keydown', function (event) {
-    //   if (event.code === 'KeyC') {
-    //     handleSwitchCamera();
-    //   }
-    // });
   }, []);
 
   const setView = () => {
@@ -1271,13 +1516,13 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
     setView();
 
     if (Controls.current) {
-      Controls.current.enabled = true;
+      // Controls.current.enabled = true;
       // // Controls.current.maxAzimuthAngle = Math.PI / 4;
       // // Controls.current.minAzimuthAngle = -Math.PI / 5;
-      Controls.current.maxPolarAngle = Math.PI / 2;
-      Controls.current.minPolarAngle = Math.PI / 4;
-      Controls.current.maxDistance = 100;
-      Controls.current.minDistance = 4;
+      // Controls.current.maxPolarAngle = Math.PI / 2;
+      // Controls.current.minPolarAngle = Math.PI / 4;
+      // Controls.current.maxDistance = 100;
+      // Controls.current.minDistance = 4;
       Controls.current.update();
     }
     window.addEventListener('resize', setView);
@@ -1382,10 +1627,6 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
             //handleRacePlaySpeed && handleRacePlaySpeed(pathPlaySpeed.current);
             SoundArenaUtil.throughoutCrowdEnvSoundLoop.sound.play();
             SoundArenaUtil.throughoutWindSoundLoop.sound.play();
-            // SoundArenaUtil.countdownReady.sound.play();
-            // SoundArenaUtil.countdownReady.sound.on('end', () => {
-            //   SoundArenaUtil.countdownGo.sound.play();
-            // });
           }}>
           Run
         </button>
@@ -1424,69 +1665,8 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
                 });
               }, 5 * 1000);
             });
-
-            // HorseManCurrentAnimationType.current = AnimationType.Sprint;
-            // console.log('page Sprint onClick  000', HorseManCurrentAnimationType.current);
-            // setTimeout(() => {
-            //   // handleSwitchAnimation(AnimationType.Run, () => {
-            //   //   console.log('page Sprint onClick  222', CurrentLookAtAnimationType.current);
-            //   // });
-            //   console.log('page Sprint onClick  111', HorseManCurrentAnimationType.current);
-            //   HorseManCurrentAnimationType.current = AnimationType.Run;
-            // }, 3 * 1000);
           }}>
           Sprint
-        </button>
-        <button
-          className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
-          onClick={() => {
-            if (lookAtTrackNumber.current === '-1') {
-              alert('请先选择要观看的马！');
-              return;
-            }
-            console.log('page Overtake onClick  000', CurrentLookAtAnimationType.current);
-            handleSwitchAnimation(AnimationType.Overtake, () => {
-              console.log('page Overtake onClick  111', CurrentLookAtAnimationType.current);
-              handleSwitchAnimation(CurrentLookAtAnimationType.current.prevAnimType, () => {
-                console.log('page Overtake onClick  222', CurrentLookAtAnimationType.current);
-              });
-            });
-          }}>
-          Overtake
-        </button>
-        <button
-          className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
-          onClick={() => {
-            if (lookAtTrackNumber.current === '-1') {
-              alert('请先选择要观看的马！');
-              return;
-            }
-            console.log('page Hold onClick  000', CurrentLookAtAnimationType.current);
-            handleSwitchAnimation(AnimationType.Hold, () => {
-              console.log('page Hold onClick  111', CurrentLookAtAnimationType.current);
-              handleSwitchAnimation(CurrentLookAtAnimationType.current.prevAnimType, () => {
-                console.log('page Hold onClick  222', CurrentLookAtAnimationType.current);
-              });
-            });
-          }}>
-          Hold
-        </button>
-        <button
-          className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
-          onClick={() => {
-            if (lookAtTrackNumber.current === '-1') {
-              alert('请先选择要观看的马！');
-              return;
-            }
-            console.log('page Whiplash onClick  000', CurrentLookAtAnimationType.current);
-            handleSwitchAnimation(AnimationType.Whiplash, () => {
-              console.log('page Whiplash onClick  111', CurrentLookAtAnimationType.current);
-              handleSwitchAnimation(CurrentLookAtAnimationType.current.prevAnimType, () => {
-                console.log('page Whiplash onClick  222', CurrentLookAtAnimationType.current);
-              });
-            });
-          }}>
-          Whiplash
         </button>
         <button
           className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
@@ -1503,40 +1683,9 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
                 //CurrentLookAtAnimationType.current.hCode = '';
               });
             });
-            //HorseManCurrentAnimationType.current = AnimationType.Whiplash;
-            // setTimeout(() => {
-            //   handleSwitchAnimation(AnimationType.Run, 0);
-            // }, 1000);
-
-            //HorseManCurrentAnimationType.current = AnimationType.Whiplash;
-            // setTimeout(() => {
-            //   HorseManCurrentAnimationType.current = AnimationType.Run;
-            // }, 1 * 1000);
           }}>
           Whiplash
         </button>
-
-        {/* {HModelTrackNumbers.length > 0 &&
-          HModelTrackNumbers.map((num, idx) => {
-            return (
-              <button
-                key={idx}
-                className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
-                onClick={() => {
-                  lookAtTrackNumber.current = num;
-                  pathTerminusCamVector3.isUse = false;
-                  //SoundArenaUtil.skillsOvertake.sound.play();
-                }}>
-                Horse {num}
-              </button>
-            );
-          })} */}
-        {/* <button
-          className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
-          onClick={() => (lookAtTrackNumber.current = -1)}>
-          Horse Ranking 1
-        </button> */}
-
         <select
           placeholder='Switch Horse'
           onChange={handleSelectHorseChange}
@@ -1559,6 +1708,16 @@ function TrackSantaArenaModel({ raceDataInfo, handleRaceStart, handleRenderScene
           }}>
           Switch Camera
         </button>
+        <select
+          title='导播视角'
+          defaultValue='4'
+          onChange={handleSwitchGodCamSelectChange}
+          className=' mx-2 my-1 w-24 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'>
+          <option value='1'>视角1-全景</option>
+          <option value='2'>视角2-后方跟拍</option>
+          <option value='3'>视角3-前方跟拍</option>
+          <option value='4'>视角4-比赛中</option>
+        </select>
         <button
           className=' mx-2 my-1 rounded bg-blue-400 px-2 py-1 text-base text-white shadow shadow-blue-200'
           onClick={() => {
